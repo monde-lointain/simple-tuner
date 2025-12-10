@@ -64,7 +64,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 
 4. **Unit Test Framework Integration**
    - Add Google Test as dependency (via CMake FetchContent)
-   - Create first test file: `tests/unit/test_frequency_calculator.cpp`
+   - Create first test file: `tests/test_frequency_calculator.cpp`
    - Implement basic test: Verify A4 = 440 Hz calculation
    - Configure CMake to build and execute tests: `make test` or `ctest`
    - Verify test execution and reporting
@@ -237,7 +237,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -351,7 +351,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -481,7 +481,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -593,7 +593,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -697,7 +697,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -822,7 +822,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -933,7 +933,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Execute tests locally before committing
 - Verify CI pipeline passes before proceeding to mobile device testing
 - Target: Maintain ≥80% code coverage of shared library
-- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+- All new code in `src/shared/` must have corresponding tests in `tests/`
 
 **Mobile Implementation:**
 
@@ -1080,7 +1080,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 
 **Execution:**
 1. Developer writes feature code in `src/shared/`
-2. Developer writes unit tests in `tests/unit/`
+2. Developer writes unit tests in `tests/`
 3. Developer runs `make test` locally
 4. Developer commits code
 5. CI/CD runs desktop test suite

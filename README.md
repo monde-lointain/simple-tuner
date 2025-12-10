@@ -75,7 +75,7 @@ simple-tuner/
 │   │   ├── algorithms/         # FrequencyCalculator, PitchDetector, ToneGenerator
 │   │   └── config/             # ConfigManager
 │   └── platform/desktop/       # Mock audio/config/permissions for testing
-├── tests/unit/                 # Unit tests (GoogleTest)
+├── tests/                      # Unit tests (GoogleTest)
 ├── .github/workflows/          # CI/CD (GitHub Actions)
 └── docs/requirements/          # Requirements documentation
 ```
