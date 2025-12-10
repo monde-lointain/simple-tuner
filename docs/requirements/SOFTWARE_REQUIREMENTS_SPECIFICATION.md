@@ -674,6 +674,22 @@ The following constraints establish boundaries for architecture, technology sele
 - **Rationale:** JUCE Personal License permits non-commercial open-source use; commercial licensing may be required if business model changes
 - **Impact:** License selection impacts future monetization options and contribution model
 
+**CON-21: Desktop Testing Infrastructure**
+**Priority:** HIGH
+**Constraint:** Development workflow shall include desktop-based testing capability to enable rapid iteration and automated testing without requiring mobile device deployment.
+
+**Impact:**
+- Requires dual build system support (CMake for desktop, Projucer for mobile)
+- Requires platform abstraction layer for testability
+- Influences architecture to separate platform-dependent code
+- Enables CI/CD automation without mobile device infrastructure
+
+**Justification:**
+- Mobile device testing is slow and resource-intensive
+- Automated testing requires desktop test harness
+- Reduces development cycle time significantly
+- Enables unit testing in CI/CD pipeline
+
 **CON-22: Continuous Integration Limitations**
 - **Constraint:** Build automation may be limited to basic compilation testing without extensive device emulation or performance testing
 - **Rationale:** Advanced CI/CD infrastructure requires paid services or significant configuration effort
@@ -3347,14 +3363,25 @@ This section defines non-functional requirements addressing quality characterist
 - Platform-specific testing confirms appropriate conventions followed
 - User surveys confirm application "feels native" on each platform
 
-**PO-003: Build System Portability**  
-**Priority:** HIGH  
-**Requirement:** The application shall use JUCE's Projucer or CMake-based build system enabling generation of Xcode projects (iOS/macOS) and Android Studio projects from a single project configuration.
+**PO-003: Build System Portability**
+**Priority:** HIGH
+**Requirement:** The application shall use dual build system configuration:
+- CMake for local development, desktop testing, and CI/CD automation
+- Projucer for mobile platform project generation (iOS Xcode, Android Studio)
+
+Both build systems shall target the same shared codebase with platform-specific conditionals where necessary.
 
 **Verification:**
-- Generate Xcode project from Projucer/CMake: Successful iOS build
-- Generate Android Studio project from Projucer/CMake: Successful Android build
+- CMake generates desktop executable with unit test runner
+- Projucer generates iOS Xcode project: Successful iOS build
+- Projucer generates Android Studio project: Successful Android build
+- CMake and Projucer builds compile identical shared codebase
 - Minimal manual configuration required post-generation
+
+**Measurement:**
+- Desktop test executable runs on macOS, Windows, Linux
+- Mobile builds link against same shared library code
+- ≥95% of core algorithm code compiles through both build systems
 
 **PO-004: Dependency Minimization**  
 **Priority:** HIGH  
@@ -3411,8 +3438,8 @@ This section defines non-functional requirements addressing quality characterist
 - Code audit confirms strings externalized to resource files
 - UI layouts tested with 30% text expansion
 
-**PO-010: Compiler Portability**  
-**Priority:** MEDIUM  
+**PO-010: Compiler Portability**
+**Priority:** MEDIUM
 **Requirement:** The C++ codebase shall be compilable with platform-standard toolchains without requiring specific compiler versions or extensions:
 - iOS: Apple Clang (provided with Xcode)
 - Android: Clang (provided with NDK)
@@ -3422,6 +3449,161 @@ This section defines non-functional requirements addressing quality characterist
 - Successful compilation on macOS with Xcode (various versions)
 - Successful compilation with Android NDK on macOS, Windows, Linux
 - No compiler warnings at high warning levels (-Wall -Wextra)
+
+**PO-011: Shared Library Architecture**
+**Priority:** CRITICAL
+**Requirement:** Platform-independent application logic shall be organized into a shared library achieving ≥95% core code isolation from platform-specific implementations.
+
+**Scope:**
+- Pitch detection algorithms (PitchDetector, autocorrelation, NSDF)
+- Tone generation algorithms (ToneGenerator, sine synthesis)
+- Frequency calculations (FrequencyCalculator, equal temperament)
+- Configuration management (reference pitch calculations)
+- Business logic and state management
+
+**Verification:**
+- Static analysis: Lines of code in shared library vs. platform wrappers
+- Target: ≥95% of core algorithms in shared library
+- Shared library compiles without platform-specific headers
+- Unit tests link only against shared library
+
+**Measurement:**
+```
+Shared Library LOC / (Shared Library LOC + Platform Wrapper LOC) ≥ 0.95
+```
+
+**PO-012: Platform Abstraction Interfaces**
+**Priority:** HIGH
+**Requirement:** The application shall define clean abstraction interfaces for platform-dependent services, enabling desktop test implementations alongside production mobile implementations.
+
+**Required Abstractions:**
+1. **Audio I/O Interface:**
+   - `getAudioInput()`: Provides microphone samples or test signal injection
+   - `writeAudioOutput()`: Routes to speakers or test verification buffer
+
+2. **Storage/Preferences Interface:**
+   - `readPreference(key)`: Retrieves stored value or in-memory test value
+   - `writePreference(key, value)`: Persists to UserDefaults/SharedPreferences or test mock
+
+3. **Permission Interface:**
+   - `requestMicrophonePermission()`: Platform-specific flow or auto-grant in tests
+   - `getMicrophonePermissionStatus()`: Returns granted/denied or always-granted in tests
+
+**Verification:**
+- Interface definition files contain no platform-specific types
+- Desktop test implementations compile and link successfully
+- Mobile implementations compile and link successfully
+- Shared library code depends only on abstract interfaces, not concrete implementations
+
+**Implementation Pattern:**
+```cpp
+// Abstract interface (in shared library)
+class IAudioInput {
+public:
+    virtual ~IAudioInput() = default;
+    virtual void getAudioSamples(float* buffer, int numSamples) = 0;
+};
+
+// Production implementation (mobile platforms)
+class JUCEAudioInput : public IAudioInput { /* JUCE AudioDeviceManager */ };
+
+// Test implementation (desktop)
+class MockAudioInput : public IAudioInput { /* Inject test signals */ };
+```
+
+**PO-013: Desktop Test Runner**
+**Priority:** HIGH
+**Requirement:** The project shall include a command-line desktop test runner executable enabling automated unit testing of core algorithms without mobile device deployment.
+
+**Scope:**
+- **Minimal, not comprehensive:** Unit tests only, not full UI/integration testing
+- Tests pitch detection algorithm accuracy
+- Tests tone generation algorithm accuracy
+- Tests frequency calculation correctness
+- Tests configuration management logic
+- Runs on developer workstations (macOS, Linux, Windows)
+
+**Out of Scope:**
+- Full application UI testing (remains mobile-only)
+- Integration testing with real audio hardware (remains mobile-focused)
+- Performance/latency testing (mobile devices only)
+
+**Verification:**
+- Desktop test executable compiles via CMake
+- Test runner executes without requiring mobile device
+- Test results output in standard format (TAP, JUnit XML)
+- Exit code indicates pass/fail for CI/CD integration
+
+**Metrics:**
+- ≥80% code coverage of shared library algorithms
+- Test execution completes in <60 seconds on standard development machine
+
+---
+
+### 6.7 Maintainability
+
+**Maintainability addresses ease of understanding, modifying, testing, and extending the codebase.**
+
+**MA-001: Modularity and Separation of Concerns**
+**Priority:** HIGH
+**Requirement:** The codebase shall be organized into distinct modules with clear responsibilities and minimal coupling:
+- **Shared Algorithm Library:** Platform-independent logic (≥95% of core code)
+- **Platform Abstraction Layer:** Interface definitions for platform services
+- **Platform Implementations:** iOS, Android, Desktop (test) implementations of abstractions
+- **UI Layer:** Platform-specific user interface code
+
+**Verification:**
+- Dependency analysis confirms shared library has no dependencies on platform implementations
+- Module boundaries enforced through build system configuration
+- No circular dependencies between modules
+
+**Measurement:**
+- Coupling metrics: Shared library imports ≤3 platform-agnostic headers
+- Cohesion metrics: Each module has single clear responsibility
+
+**MA-002: Testability**
+**Priority:** HIGH
+**Requirement:** The codebase shall be designed for automated testing through:
+- Dependency injection of platform services
+- Pure functions for algorithmic computations where feasible
+- Mockable interfaces for external dependencies
+- Desktop test harness for rapid iteration
+
+**Verification:**
+- ≥80% of shared library code covered by automated unit tests
+- Core algorithms testable without platform-specific dependencies
+- Test suite executes in CI/CD pipeline
+
+**Measurement:**
+- Code coverage percentage (target ≥80% for shared library)
+- Number of unit tests (target ≥50 for core algorithms)
+- Test execution time (target <60 seconds)
+
+**MA-003: Code Organization and Documentation**
+**Priority:** MEDIUM
+**Requirement:** Source code shall follow consistent organization and documentation standards:
+- Header files declare interfaces with Doxygen-compatible comments
+- Implementation files separated from interfaces
+- Clear directory structure: `src/shared/`, `src/platform/ios/`, `src/platform/android/`, `src/platform/desktop/`
+- README files in each module directory
+
+**Verification:**
+- Directory structure audit
+- Documentation completeness check (all public APIs documented)
+- Consistent naming conventions verified through linting
+
+**MA-004: Build System Maintainability**
+**Priority:** MEDIUM
+**Requirement:** Build configurations shall be maintainable and reproducible:
+- CMakeLists.txt for desktop/CI builds with clear dependency management
+- Projucer project for mobile builds with documented setup steps
+- Build documentation includes setup instructions for new developers
+- Dependency versions pinned and documented
+
+**Verification:**
+- New developer can build project following documentation in <30 minutes
+- Builds reproducible across development machines
+- No "works on my machine" issues
 
 ---
 
@@ -3756,8 +3938,8 @@ This section addresses additional requirements not covered in previous sections.
 - Response to critical bugs within 1 week
 - No real-time support (phone, chat) due to volunteer nature
 
-**OR-021: Issue Tracking**  
-**Priority:** MEDIUM  
+**OR-021: Issue Tracking**
+**Priority:** MEDIUM
 **Requirement:** The project shall maintain issue tracking for:
 - Bug reports from users
 - Feature requests
@@ -3765,6 +3947,29 @@ This section addresses additional requirements not covered in previous sections.
 - Development tasks
 
 **Tool:** GitHub Issues, Jira, or similar platform.
+
+**OR-021A: Continuous Integration Requirements**
+**Priority:** HIGH
+**Requirement:** The project shall maintain automated continuous integration (CI) pipeline:
+- **Desktop Unit Tests:** Execute on every commit to main/feature branches
+- **Mobile Builds:** Compile iOS and Android builds to verify compilation
+- **Test Gating:** Mobile builds only proceed if desktop unit tests pass
+- **Failure Notification:** Team notified within 15 minutes of test failures
+
+**CI Pipeline Stages:**
+1. Stage 1: Desktop unit tests (via CMake build and test runner)
+2. Stage 2: iOS compilation verification (if Stage 1 passes)
+3. Stage 3: Android compilation verification (if Stage 1 passes)
+
+**Verification:**
+- CI configuration file present in repository (e.g., `.github/workflows/ci.yml`)
+- Commit hooks prevent pushes without passing local tests (optional)
+- Build badge displayed in repository README
+
+**Justification:**
+- Prevents regression in core algorithms
+- Catches platform-specific build issues early
+- Desktop tests provide fast feedback (< 5 minutes vs. mobile builds ~20+ minutes)
 
 **OR-022: Critical Bug Response**  
 **Priority:** HIGH  

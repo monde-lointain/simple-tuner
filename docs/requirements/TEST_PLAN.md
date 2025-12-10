@@ -6,14 +6,25 @@
 This test plan defines the comprehensive testing strategy for the Chromatic Tuner mobile application to ensure it meets all functional requirements, performance standards, and quality attributes specified in the requirements documentation.
 
 ### 1.2 Scope
-Testing covers all application functionality across iOS and Android platforms, including:
-- Pitch detection and display (Meter Mode)
-- Reference tone generation (Sound Mode)
-- Reference pitch calibration
+Testing covers all application functionality across desktop (unit testing) and mobile (iOS/Android) platforms, including:
+
+**Desktop Testing (Unit/Algorithm Validation):**
+- Pitch detection algorithm accuracy (autocorrelation, NSDF, frequency extraction)
+- Tone generation algorithm accuracy (sine synthesis, frequency calculation)
+- Frequency calculation correctness (equal temperament, cent deviation)
+- Configuration management logic (reference pitch storage/retrieval)
+- Automated execution in CI/CD pipeline
+
+**Mobile Device Testing (Integration/System/Acceptance):**
+- Pitch detection and display (Meter Mode) with real audio hardware
+- Reference tone generation (Sound Mode) through device speakers
 - User interface and orientation handling
-- Audio input/output management
-- Data persistence
-- Cross-platform compatibility
+- Audio input/output management with platform audio systems
+- Data persistence (UserDefaults, SharedPreferences)
+- Cross-platform compatibility (iOS and Android)
+- Performance, usability, and environmental testing
+
+**Test Strategy:** Desktop unit tests execute first, gating mobile builds in CI/CD. Mobile testing proceeds only after desktop tests pass, ensuring core algorithm correctness before platform-specific integration testing.
 
 ### 1.3 Test Objectives
 - Verify all functional requirements are correctly implemented
@@ -25,6 +36,14 @@ Testing covers all application functionality across iOS and Android platforms, i
 - Verify cross-platform consistency
 
 ### 1.4 Test Environment
+**Desktop (Unit Testing):**
+- Platforms: macOS 11+, Ubuntu 20.04+, Windows 10+ (primary: developer workstations)
+- Build System: CMake 3.20+
+- Compiler: Clang 12+, GCC 10+, MSVC 2019+
+- Test Framework: Catch2 or Google Test (lightweight C++ unit test framework)
+- Execution: Local development machines, CI/CD runners (GitHub Actions, Jenkins, etc.)
+- Purpose: Algorithm validation, regression prevention, rapid iteration
+
 **iOS:**
 - Devices: iPhone SE (2nd gen), iPhone 12, iPhone 14 Pro
 - OS Versions: iOS 13.0, 15.0, 16.0, 17.0
@@ -42,9 +61,61 @@ Testing covers all application functionality across iOS and Android platforms, i
 - Sound level meter
 - Acoustic test chamber (for noise testing)
 
+### 1.5 Desktop Testing Strategy
+
+**Rationale:**
+Desktop-based unit testing enables rapid algorithm validation without mobile device deployment overhead. Unit tests execute in seconds locally and in CI/CD, providing immediate feedback on core algorithm correctness before time-intensive mobile builds.
+
+**Scope of Desktop Testing:**
+- **IN SCOPE:** Algorithm unit tests for pitch detection, tone generation, frequency calculations, configuration logic
+- **OUT OF SCOPE:** UI testing, real audio I/O, platform-specific integration, performance/latency measurement
+
+**Desktop Test Infrastructure:**
+- **Minimal test runner:** Command-line executable, not comprehensive test harness
+- **Unit tests only:** Focused on algorithmic correctness, not integration or system testing
+- **Mock platform services:** Stub implementations of audio I/O, storage, permissions
+- **Fast execution:** Test suite completes in <60 seconds
+
+**CI/CD Integration:**
+- Desktop tests run on every commit (pre-merge requirement)
+- Mobile builds only proceed if desktop tests pass
+- Test failures block pull requests
+- Coverage metrics tracked over time (target: ≥80% of shared library)
+
+**Test Execution Order:**
+1. **Desktop unit tests** (Phase 0): Validate core algorithms
+2. **iOS integration tests** (Phase 1): Verify iOS platform integration (if Phase 0 passes)
+3. **Android integration tests** (Phase 2): Verify Android platform integration (if Phase 0 passes)
+4. **System/Acceptance tests** (Phase 3): Comprehensive device testing (if Phases 0-2 pass)
+
 ---
 
 ## 2. Unit Testing
+
+### 2.0 Desktop Unit Test Execution
+
+**All unit tests described in Section 2 shall execute on desktop platforms via the command-line test runner before mobile device testing.**
+
+**Desktop Test Execution:**
+- **Build System:** CMake-based desktop executable
+- **Platform:** macOS, Linux, Windows (developer workstations + CI/CD)
+- **Mock Dependencies:**
+  - `MockAudioInput`: Injects synthetic test signals with known frequencies
+  - `MockAudioOutput`: Captures generated audio for verification
+  - `MockConfigStorage`: In-memory preference storage for test isolation
+  - `MockPermissions`: Auto-granted permissions for test environment
+- **Test Assertions:** Standard C++ unit test framework (Catch2/Google Test)
+- **Coverage Target:** ≥80% of shared library code
+
+**Mobile Unit Test Execution (Secondary):**
+- iOS: XCTest framework on physical devices/simulators (after desktop tests pass)
+- Android: JUnit + Android Instrumentation on emulators/devices (after desktop tests pass)
+- Purpose: Verify platform-specific integrations, not re-test algorithms
+
+**Execution Priority:**
+1. Desktop tests execute first (seconds)
+2. Mobile tests execute second (minutes)
+3. Mobile builds only if desktop tests pass
 
 ### 2.1 Pitch Detection Algorithm Tests
 
@@ -606,46 +677,72 @@ Testing covers all application functionality across iOS and Android platforms, i
 
 ### 6.1 Test Phases
 
-**Phase 1: Unit Testing (Weeks 1-2)**
-- Developers execute unit tests during development
-- Continuous integration runs unit test suite on each commit
-- Target: 80%+ code coverage for core algorithms
+**Phase 0: Desktop Unit Testing (Continuous, Weeks 1-12)**
+- Developers write unit tests alongside feature implementation
+- Tests execute locally before committing code
+- CI/CD runs full desktop test suite on every commit
+- Target: ≥80% code coverage of shared library
+- Execution time: <60 seconds
+- **Entry Criteria:** Feature code complete
+- **Exit Criteria:** All desktop unit tests passing, coverage target met
+- **Gating:** Blocks merge to main branch if tests fail
 
-**Phase 2: Integration Testing (Weeks 3-4)**
-- QA team executes integration test suite
+**Phase 1: Mobile Integration Testing (Weeks 3-4)**
+- QA team executes integration test suite on mobile devices
 - Focus on audio pipeline and platform integration
 - Automated where feasible; manual for hardware interaction
+- **Entry Criteria:** Desktop unit tests passing, mobile build compiles
+- **Exit Criteria:** Audio I/O functional, platform integrations working
+- **Dependencies:** Requires Phase 0 passing
 
-**Phase 3: System Testing (Weeks 5-7)**
-- Comprehensive functional, performance, compatibility testing
+**Phase 2: System Testing (Weeks 5-7)**
+- Comprehensive functional, performance, compatibility testing on mobile devices
 - Multiple device testing in parallel
 - Accuracy testing with calibrated equipment
+- **Entry Criteria:** Integration tests passing, all features complete
+- **Exit Criteria:** All critical/high priority test cases passing
+- **Dependencies:** Requires Phases 0-1 passing
 
-**Phase 4: Beta Testing (Weeks 8-10)**
+**Phase 3: Beta Testing (Weeks 8-10)**
 - Distribute to 50-100 volunteer musicians
 - Collect usage data, crash reports, feedback
 - Address critical issues before release
+- **Entry Criteria:** System testing complete, build stable
+- **Exit Criteria:** <0.5% crash rate, user satisfaction >80%
+- **Dependencies:** Requires Phases 0-2 passing
 
-**Phase 5: Acceptance Testing (Week 11)**
+**Phase 4: Acceptance Testing (Week 11)**
 - Final UAT with representative users
 - Final accuracy validation
 - App store compliance verification
+- **Entry Criteria:** Beta testing complete, all critical issues resolved
+- **Exit Criteria:** Acceptance criteria met, app store compliance verified
+- **Dependencies:** Requires Phases 0-3 passing
 
-**Phase 6: Release (Week 12)**
+**Phase 5: Release (Week 12)**
 - App store submission
 - Post-release monitoring
+- **Entry Criteria:** Acceptance testing complete, release checklist verified
+- **Dependencies:** Requires all previous phases passing
 
 ### 6.2 Entry and Exit Criteria
 
-**Entry Criteria:**
+**Entry Criteria (Mobile Testing Phases):**
+- **Desktop unit tests passing** (≥80% coverage, all tests green)
 - Feature complete per requirements
-- Unit tests passing
-- Build stable (no critical crashes)
+- Mobile builds compiling successfully (iOS + Android)
+- Build stable (no critical crashes in desktop tests)
 - Test environment configured
 - Test devices available
 
-**Exit Criteria:**
-- All CRITICAL and HIGH priority tests passing
+**Entry Criteria (Desktop Unit Testing Phase):**
+- Feature code implemented
+- Test cases written for new functionality
+- Local build successful
+
+**Exit Criteria (Release Readiness):**
+- Desktop unit tests: 100% passing, ≥80% coverage
+- All CRITICAL and HIGH priority mobile tests passing
 - No open critical or high-severity defects
 - Performance requirements met
 - Acceptance criteria satisfied
@@ -668,10 +765,17 @@ Testing covers all application functionality across iOS and Android platforms, i
 ### 6.4 Test Automation
 
 **Automated Tests:**
-- Unit tests: 100% automated via CI/CD
-- Integration tests: Partial automation (audio testing requires hardware)
-- Performance monitoring: Automated profiling
-- Crash reporting: Automated collection via platform tools
+- **Desktop unit tests:** 100% automated via CMake + CI/CD
+  - Pitch detection algorithm tests
+  - Tone generation algorithm tests
+  - Frequency calculation tests
+  - Configuration management tests
+  - Executes in <60 seconds
+  - Runs on every commit
+- **Mobile unit tests:** Partial automation (XCTest, JUnit)
+- **Integration tests:** Partial automation (audio testing requires hardware)
+- **Performance monitoring:** Automated profiling
+- **Crash reporting:** Automated collection via platform tools
 
 **Manual Tests:**
 - Usability testing
@@ -712,13 +816,15 @@ Testing covers all application functionality across iOS and Android platforms, i
 
 | Phase | Duration | Activities |
 |-------|----------|------------|
+| **Desktop Unit Testing** | **Weeks 0-12 (Continuous)** | **Developer-driven unit tests, CI/CD automation** |
 | Test Planning | Week 0 | Finalize test plan, prepare environment |
-| Unit Testing | Weeks 1-2 | Developer-driven unit tests |
-| Integration Testing | Weeks 3-4 | QA integration test execution |
-| System Testing | Weeks 5-7 | Comprehensive system test execution |
+| Mobile Integration Testing | Weeks 3-4 | QA integration test execution (after desktop tests pass) |
+| System Testing | Weeks 5-7 | Comprehensive mobile device test execution |
 | Beta Testing | Weeks 8-10 | Public beta, feedback collection |
 | Acceptance Testing | Week 11 | UAT, final validation |
 | Release | Week 12 | App store submission |
+
+**Note:** Desktop unit testing runs continuously throughout all phases. Mobile testing phases only proceed after desktop tests pass in CI/CD.
 
 ---
 
@@ -740,6 +846,11 @@ Testing covers all application functionality across iOS and Android platforms, i
 - Acoustic test environment
 
 **Software:**
+- **Desktop testing:**
+  - CMake 3.20+ (build system)
+  - Catch2 or Google Test (C++ unit test framework)
+  - CI/CD platform (GitHub Actions, Jenkins, etc.)
+  - Code coverage tools (gcov, lcov, or similar)
 - Xcode with testing tools
 - Android Studio with testing tools
 - Audio analysis software

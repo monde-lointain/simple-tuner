@@ -4,87 +4,197 @@
 
 This implementation plan provides a phased approach to building the Chromatic Tuner mobile application using the JUCE framework. The plan follows an incremental development strategy, building and testing core functionality before adding features. Each phase includes specific implementation steps, deliverables, success criteria, and traceability to functional requirements and business rules.
 
-**Total Duration:** 12 weeks  
-**Target Platforms:** iOS 13+ and Android 8.0+  
-**Framework:** JUCE 7.0+
+**Total Duration:** 12 weeks
+**Target Platforms:** iOS 13+, Android 8.0+, Desktop (test environment)
+**Framework:** JUCE 7.0+ (mobile platforms), CMake (desktop testing)
+**Build Systems:** CMake (desktop/CI), Projucer (mobile platforms)
 
 ---
 
-## Phase 1: Project Foundation and Audio Infrastructure (Weeks 1-2)
+## Phase 1: Desktop Testing Infrastructure and Project Foundation (Weeks 1-2)
 
 ### Objectives
-- Establish project structure and build system
-- Implement basic audio I/O infrastructure
-- Create minimal UI framework
-- Verify cross-platform builds
+- **Week 1:** Establish desktop-first testing infrastructure
+- **Week 2:** Implement mobile platform project structure and audio infrastructure
+- Prioritize rapid testing capability over mobile deployment
+- Create foundation for CI/CD automation
 
-### Implementation Steps
+### Week 1: Desktop Testing Setup
 
-1. **Project Setup**
+**Implementation Steps:**
+
+1. **Desktop CMake Project Setup**
+   - Create CMakeLists.txt in project root
+   - Define shared library target (`chromatic_tuner_core`) containing platform-independent code
+   - Define desktop test executable target (`chromatic_tuner_tests`)
+   - Configure C++17 standard, enable warnings (-Wall -Wextra)
+   - Set up directory structure:
+     ```
+     src/
+       shared/         # Platform-independent core (≥95% of algorithm code)
+         algorithms/   # Pitch detection, tone generation, frequency calc
+         interfaces/   # Abstract interfaces for platform services
+         config/       # Configuration management
+       platform/
+         desktop/      # Mock implementations for testing
+         ios/          # iOS-specific code (Week 2)
+         android/      # Android-specific code (Week 2)
+     tests/
+       unit/           # Unit tests for shared library
+     ```
+
+2. **Platform Abstraction Layer Design**
+   - Define `IAudioInput` interface (abstract microphone/test signal injection)
+   - Define `IAudioOutput` interface (abstract speakers/test verification)
+   - Define `IConfigStorage` interface (abstract UserDefaults/SharedPreferences/mock)
+   - Define `IPermissions` interface (abstract permission handling/auto-grant)
+   - Document interface contracts with clear comments
+   - Verify interfaces contain no platform-specific types (pure abstract C++)
+
+3. **Mock Platform Implementations (Desktop)**
+   - Create `MockAudioInput`: Injects synthetic sine waves at specified frequencies
+   - Create `MockAudioOutput`: Captures generated samples for verification
+   - Create `MockConfigStorage`: In-memory key-value store for test isolation
+   - Create `MockPermissions`: Auto-grants all permissions for test environment
+   - Implement minimal functionality sufficient for unit testing
+
+4. **Unit Test Framework Integration**
+   - Add Catch2 or Google Test as dependency (via CMake FetchContent or submodule)
+   - Create first test file: `tests/unit/test_frequency_calculator.cpp`
+   - Implement basic test: Verify A4 = 440 Hz calculation
+   - Configure CMake to build and execute tests: `make test` or `ctest`
+   - Verify test execution and reporting
+
+5. **Shared Library Stub Implementation**
+   - Create `FrequencyCalculator` class skeleton (equal temperament formula)
+   - Create `PitchDetector` class skeleton (placeholder implementation)
+   - Create `ToneGenerator` class skeleton (placeholder sine synthesis)
+   - Create `ConfigManager` class skeleton (reference pitch logic)
+   - Implement only frequency calculation fully in Week 1 (rest in later phases)
+   - Ensure all classes compile and link in shared library
+
+6. **Desktop Build Verification**
+   - Build desktop test executable via CMake
+   - Execute test suite locally (should have ≥1 passing test)
+   - Verify test output format (TAP or JUnit XML for CI integration)
+   - Measure test execution time (should be <5 seconds at this stage)
+   - Document build instructions in README.md
+
+7. **CI/CD Pipeline Setup**
+   - Create CI configuration file (e.g., `.github/workflows/ci.yml` for GitHub Actions)
+   - Configure Stage 1: Build desktop executable + run tests
+   - Configure failure notifications (email, Slack, etc.)
+   - Verify CI executes on commit to feature branch
+   - Document CI setup and requirements
+
+**Deliverables (Week 1):**
+- CMake build system compiling shared library and test executable
+- Platform abstraction interfaces defined
+- Mock implementations for desktop testing
+- ≥1 unit test passing (frequency calculation)
+- CI/CD pipeline running desktop tests
+- Documentation: Build instructions, architecture overview
+
+**Success Criteria (Week 1):**
+- ✓ Desktop test executable builds on macOS/Linux/Windows
+- ✓ Unit test framework executes and reports results
+- ✓ CI pipeline triggers on commit and reports status
+- ✓ Shared library code compiles without platform-specific dependencies
+- ✓ Mock implementations enable test execution without real audio hardware
+
+---
+
+### Week 2: Mobile Platform Setup
+
+**Implementation Steps:**
+
+1. **Projucer Mobile Project Setup**
    - Create JUCE Projucer project with iOS and Android exporters
    - Configure project settings (bundle IDs, version, app name)
    - Set minimum OS versions (iOS 13.0, Android API 26)
    - Enable required JUCE modules (audio_basics, audio_devices, dsp, gui_basics, core)
    - Configure C++17 standard in project settings
+   - **Link against shared library:** Configure Projucer to compile `src/shared/` code
 
-2. **Build System Configuration**
+2. **Mobile Build System Configuration**
    - Generate Xcode project for iOS development
    - Generate Android Studio project with NDK configuration
    - Configure code signing for iOS (development certificates)
    - Configure Android keystore for signing
    - Verify clean builds on both platforms
+   - **Ensure shared library code compiles identically** in mobile builds
 
-3. **Audio Device Initialization**
+3. **Mobile Platform Implementations**
+   - Create `JUCEAudioInput` implementing `IAudioInput` (wraps AudioDeviceManager)
+   - Create `JUCEAudioOutput` implementing `IAudioOutput` (wraps AudioDeviceManager)
+   - Create `iOSConfigStorage` implementing `IConfigStorage` (wraps UserDefaults)
+   - Create `AndroidConfigStorage` implementing `IConfigStorage` (wraps SharedPreferences)
+   - Create `iOSPermissions` implementing `IPermissions` (wraps AVAudioSession)
+   - Create `AndroidPermissions` implementing `IPermissions` (wraps ActivityCompat)
+
+4. **Audio Device Initialization (Mobile)**
    - Create `AudioManager` class wrapping JUCE AudioDeviceManager
    - Implement audio device initialization with error handling
    - Configure mono input (1 channel) and stereo output (2 channels)
    - Request minimum buffer size for low latency
    - Implement sample rate detection (44.1/48 kHz)
 
-4. **Audio Callback Implementation**
+5. **Audio Callback Implementation (Mobile)**
    - Create `AudioProcessor` class implementing AudioIODeviceCallback
    - Implement processBlock() for real-time audio handling
    - Add input buffer access for pitch detection (placeholder)
    - Add output buffer synthesis for tone generation (placeholder)
    - Verify callback thread priority (real-time)
 
-5. **Basic UI Framework**
+6. **Basic UI Framework (Mobile)**
    - Create `MainComponent` extending JUCE Component
    - Implement basic window with title bar
    - Add placeholder UI elements (labels for mode, note display)
    - Implement paint() method for basic rendering
    - Test UI responsiveness to resize events
 
-6. **Platform Permission Handling**
+7. **Platform Permission Handling (Mobile)**
    - Add microphone permission strings to Info.plist (iOS)
    - Add RECORD_AUDIO permission to AndroidManifest.xml
    - Implement permission request flow on first launch
    - Handle permission granted/denied states
    - Test permission persistence across app restarts
 
-7. **Configuration Storage**
-   - Create `ConfigManager` class for preference management
-   - Implement reference pitch storage (UserDefaults/SharedPreferences)
-   - Add default value initialization (440 Hz)
-   - Implement load/save with error handling
-   - Test persistence across app launches
+8. **Mobile Build Verification**
+   - Build iOS project in Xcode
+   - Build Android project in Android Studio
+   - Deploy to test devices (iPhone, Android phone)
+   - Verify application launches without crashes
+   - Verify microphone permission dialog appears
+   - Verify audio callback executes (log statements)
 
-### Deliverables
+9. **CI/CD Mobile Build Integration**
+   - Add Stage 2 to CI pipeline: iOS compilation verification
+   - Add Stage 3 to CI pipeline: Android compilation verification
+   - Configure mobile stages to only run if Stage 1 (desktop tests) passes
+   - Verify gating: Failed desktop tests prevent mobile builds
+
+**Deliverables (Week 2):**
 - Compiling iOS and Android projects
 - Basic application launching on test devices
 - Audio callback executing without glitches
 - Microphone permission flow functional
-- Configuration persistence working
+- Mobile platform implementations of abstraction interfaces
+- CI/CD pipeline with 3 stages (desktop tests → iOS build → Android build)
 
-### Success Criteria
-- ✓ Clean builds on macOS (Xcode) and both platforms
+**Success Criteria (Week 2):**
+- ✓ Clean builds on macOS (Xcode) and Android Studio
 - ✓ Application launches without crashes on iOS and Android
 - ✓ Audio callback executes at 44.1/48 kHz without underruns
 - ✓ Microphone permission dialog appears and handles responses
-- ✓ Reference pitch value persists across app restarts
+- ✓ Shared library code compiles identically in desktop and mobile builds
+- ✓ CI pipeline gates mobile builds on desktop test success
 - ✓ No memory leaks detected in basic operation (profiling tools)
 
-### Requirements Implemented
+---
+
+### Requirements Implemented (Phase 1 Overall)
+
 **Functional Requirements:**
 - FR-083: Microphone Permission Request
 - FR-084: Permission Status Detection
@@ -93,6 +203,14 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 - FR-089: Audio Callback Implementation
 - FR-053: Frequency Recalculation (infrastructure)
 - FR-054: Persistent Storage
+
+**Non-Functional Requirements:**
+- **PO-011:** Shared Library Architecture
+- **PO-012:** Platform Abstraction Interfaces
+- **PO-013:** Desktop Test Runner
+- **MA-001:** Modularity and Separation of Concerns
+- **MA-002:** Testability
+- **MA-004:** Build System Maintainability
 
 **Business Rules:**
 - BR-018: Default reference pitch is 440 Hz on first launch
@@ -109,6 +227,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 - Test detection accuracy
 
 ### Implementation Steps
+
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
 
 1. **Autocorrelation Infrastructure**
    - Create `PitchDetector` class for analysis
@@ -214,6 +341,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 - Connect UI to pitch detection
 
 ### Implementation Steps
+
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
 
 1. **Main Screen Layout**
    - Design component hierarchy for Meter Mode screen
@@ -336,6 +472,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 ### Implementation Steps
 
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
+
 1. **Tone Generator Class**
    - Create `ToneGenerator` class for synthesis
    - Initialize with target frequency and sample rate
@@ -439,6 +584,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 ### Implementation Steps
 
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
+
 1. **Sound Mode Component**
    - Create `SoundModeComponent` extending Component
    - Implement layout for note selection and toggle
@@ -533,6 +687,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 - Test persistence and immediate application
 
 ### Implementation Steps
+
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
 
 1. **Settings Screen Component**
    - Create `SettingsComponent` extending Component
@@ -650,6 +813,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 ### Implementation Steps
 
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
+
 1. **Orientation Detection**
    - Register for orientation change notifications
    - Detect portrait vs landscape orientation
@@ -751,6 +923,15 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 - Prepare for app store submission
 
 ### Implementation Steps
+
+**Desktop Testing (Continuous):**
+- Write unit tests for all new algorithmic code implemented in this phase
+- Execute tests locally before committing
+- Verify CI pipeline passes before proceeding to mobile device testing
+- Target: Maintain ≥80% code coverage of shared library
+- All new code in `src/shared/` must have corresponding tests in `tests/unit/`
+
+**Mobile Implementation:**
 
 1. **iOS-Specific Implementation**
    - Configure AVAudioSession categories correctly
@@ -866,32 +1047,157 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 ## Testing Strategy
 
-### Unit Testing (Ongoing Throughout Development)
-- Write unit tests for each algorithm module
-- Test frequency calculations against expected values
-- Test autocorrelation and NSDF computation with known input signals
-- Test sine wave synthesis accuracy
-- Run tests in CI/CD pipeline
+### Desktop Unit Testing (Phase 0: Continuous, Weeks 1-12)
 
-### Integration Testing (Phases 5-8)
-- Test audio pipeline end-to-end
-- Verify UI to audio communication
-- Test mode switching with audio state changes
-- Validate settings changes propagate correctly
+**Primary Testing Approach:**
+- Desktop tests execute **first** on every code change
+- Fast feedback loop (test suite executes in <60 seconds)
+- Run locally by developers before commit
+- Run automatically in CI/CD on every push
+- **Gate mobile builds:** Mobile compilation/testing only proceeds if desktop tests pass
 
-### System Testing (Phase 8)
-- Execute comprehensive functional test suite
-- Perform accuracy validation with calibrated equipment
-- Conduct performance profiling
-- Test cross-device compatibility
-- Execute usability testing with target users
+**Coverage Targets:**
+- ≥80% code coverage of shared library (`src/shared/`)
+- ≥95% of core algorithm code in shared library
+- 100% of critical algorithms covered by unit tests
 
-### Acceptance Testing (Phase 8)
-- User acceptance testing with amateur musicians
-- User acceptance testing with professional musicians
-- Verify all critical requirements met
-- Confirm app store compliance
-- Final go/no-go decision
+**Test Scope:**
+- Pitch detection algorithm (autocorrelation, NSDF, frequency extraction, note mapping)
+- Tone generation algorithm (sine synthesis, frequency calculation, phase accumulation)
+- Frequency calculations (equal temperament, cent deviation, octave relationships)
+- Configuration management (reference pitch storage, retrieval, validation)
+- Signal validation (amplitude thresholds, confidence scoring)
+
+**Test Infrastructure:**
+- **Build System:** CMake
+- **Test Framework:** Catch2 or Google Test
+- **Mock Platform Services:** MockAudioInput, MockAudioOutput, MockConfigStorage, MockPermissions
+- **Platforms:** macOS, Linux, Windows (developer workstations + CI runners)
+
+**Execution:**
+1. Developer writes feature code in `src/shared/`
+2. Developer writes unit tests in `tests/unit/`
+3. Developer runs `make test` locally
+4. Developer commits code
+5. CI/CD runs desktop test suite
+6. If tests pass → CI proceeds to mobile builds
+7. If tests fail → CI stops, notifies developer, blocks merge
+
+**Metrics:**
+- Test execution time: <60 seconds (target: <30 seconds)
+- Code coverage: ≥80% of shared library
+- Test count: ≥50 unit tests by project completion
+
+---
+
+### Mobile Integration Testing (Phase 1: Weeks 3-4)
+
+**Entry Criteria:** Desktop unit tests passing at ≥80% coverage
+
+**Scope:**
+- Audio pipeline end-to-end on real devices
+- UI to audio communication
+- Platform-specific integrations (permissions, storage, audio I/O)
+- Mode switching with audio state changes
+- Settings changes propagating correctly
+
+**Execution:**
+- QA team on physical devices (iOS: iPhone SE, 12, 14; Android: varied manufacturers)
+- Manual testing with real audio input/output
+- Automated where feasible (XCTest, Android Instrumentation)
+
+**Pass Criteria:**
+- Audio I/O functional on all test devices
+- Platform integrations working correctly
+- No regressions from desktop test results
+
+---
+
+### System Testing (Phase 2: Weeks 5-7)
+
+**Entry Criteria:** Desktop unit tests passing + integration tests passing
+
+**Scope:**
+- Comprehensive functional test suite on mobile devices
+- Accuracy validation with calibrated equipment
+- Performance profiling (latency, CPU, memory)
+- Cross-device compatibility (8+ devices spanning iOS/Android, budget/flagship)
+- Usability testing with target users
+
+**Execution:**
+- Parallel testing on multiple devices
+- Calibrated audio equipment for accuracy measurement
+- Performance profiling tools
+- Real-world environmental conditions
+
+**Pass Criteria:**
+- All CRITICAL and HIGH priority tests passing
+- Performance requirements met (latency, CPU, memory)
+- Accuracy requirements met (±1 cent detection, ±1.5 cent generation)
+
+---
+
+### Beta Testing (Phase 3: Weeks 8-10)
+
+**Entry Criteria:** Desktop + integration + system tests passing
+
+**Scope:**
+- 50-100 volunteer musicians using app in real-world scenarios
+- Crash reporting via platform tools (Crashlytics, Sentry)
+- User feedback collection
+- Real-world device/environment diversity
+
+**Pass Criteria:**
+- Crash rate <0.5% of sessions
+- User satisfaction >80%
+- No critical issues blocking release
+
+---
+
+### Acceptance Testing (Phase 4: Week 11)
+
+**Entry Criteria:** All previous phases passing
+
+**Scope:**
+- User acceptance testing with representative users (amateur, professional, educators)
+- Final accuracy validation
+- App store compliance verification
+- All critical requirements implemented
+
+**Pass Criteria:**
+- UAT criteria met (80%+ success rates)
+- App store guidelines compliance verified
+- Release checklist complete
+
+---
+
+### CI/CD Pipeline Summary
+
+**Stage 0: Desktop Unit Tests (Every Commit)**
+- Build shared library via CMake
+- Build test executable
+- Execute unit tests
+- Report coverage metrics
+- **Duration:** 2-5 minutes
+- **Gate:** Blocks all subsequent stages if failed
+
+**Stage 1: iOS Build Verification (After Stage 0 Passes)**
+- Generate Xcode project via Projucer
+- Compile iOS build
+- **Duration:** 10-15 minutes
+- **Gate:** Blocks iOS deployment if failed
+
+**Stage 2: Android Build Verification (After Stage 0 Passes)**
+- Generate Android Studio project via Projucer
+- Compile Android build
+- **Duration:** 10-15 minutes
+- **Gate:** Blocks Android deployment if failed
+
+**Stage 3: Mobile Device Tests (Manual/Scheduled)**
+- Integration tests on physical devices
+- System tests with calibrated equipment
+- **Duration:** Hours (manual testing)
+- **Gate:** Blocks release if failed
 
 ---
 
@@ -909,6 +1215,13 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 ---
 
 ## Success Metrics
+
+**Desktop Testing Metrics:**
+- Code coverage: ≥80% of shared library
+- Test execution time: <60 seconds (target: <30 seconds)
+- Test count: ≥50 unit tests covering core algorithms
+- CI/CD success rate: ≥95% of commits pass desktop tests on first run
+- Shared library isolation: ≥95% of core algorithm code in `src/shared/`
 
 **Technical Metrics:**
 - Pitch detection accuracy: ≥95% within ±1 cent (40+ dB SNR)
@@ -933,13 +1246,14 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 ## Deliverables Summary
 
-**Phase 1:** Working cross-platform build, basic audio I/O, permission flow  
-**Phase 2:** Pitch detection algorithm, frequency-to-note mapping, accuracy validation  
-**Phase 3:** Complete Meter Mode UI with tuning meter  
-**Phase 4:** Tone generation algorithm, output accuracy validation  
-**Phase 5:** Complete Sound Mode UI with note selection  
-**Phase 6:** Settings screen, calibration controls, help documentation  
-**Phase 7:** Responsive layouts, orientation handling, visual polish  
+**Phase 1 (Week 1):** Desktop CMake build, platform abstraction interfaces, mock implementations, unit test framework, CI/CD pipeline (Stage 0)
+**Phase 1 (Week 2):** Mobile Projucer builds, JUCE platform implementations, basic audio I/O, permission flow, CI/CD Stages 1-2
+**Phase 2:** Pitch detection algorithm, frequency-to-note mapping, accuracy validation
+**Phase 3:** Complete Meter Mode UI with tuning meter
+**Phase 4:** Tone generation algorithm, output accuracy validation
+**Phase 5:** Complete Sound Mode UI with note selection
+**Phase 6:** Settings screen, calibration controls, help documentation
+**Phase 7:** Responsive layouts, orientation handling, visual polish
 **Phase 8:** Platform integration, comprehensive testing, app store submission materials
 
 ---
@@ -948,14 +1262,17 @@ This implementation plan provides a phased approach to building the Chromatic Tu
 
 | Week | Phase | Major Activities |
 |------|-------|-----------------|
-| 1-2 | Phase 1 | Project setup, audio infrastructure, basic UI |
-| 3-4 | Phase 2 | Pitch detection algorithm implementation and testing |
-| 5-6 | Phase 3 | Meter Mode UI implementation |
-| 7-8 | Phase 4 | Tone generation implementation and testing |
-| 9 | Phase 5 | Sound Mode UI and mode switching |
-| 10 | Phase 6 | Settings, calibration, help documentation |
-| 11 | Phase 7 | Orientation handling, layout polish |
+| 1 | Phase 1a | **Desktop testing infrastructure: CMake, abstractions, mocks, CI/CD** |
+| 2 | Phase 1b | **Mobile project setup, JUCE integration, platform implementations** |
+| 3-4 | Phase 2 | Pitch detection algorithm implementation and testing (desktop + mobile) |
+| 5-6 | Phase 3 | Meter Mode UI implementation (mobile) |
+| 7-8 | Phase 4 | Tone generation implementation and testing (desktop + mobile) |
+| 9 | Phase 5 | Sound Mode UI and mode switching (mobile) |
+| 10 | Phase 6 | Settings, calibration, help documentation (mobile) |
+| 11 | Phase 7 | Orientation handling, layout polish (mobile) |
 | 12 | Phase 8 | Platform integration, testing, app store prep |
+
+**Note:** Desktop unit testing runs continuously throughout all weeks as features are implemented.
 
 **Total Duration:** 12 weeks from project start to app store submission
 
