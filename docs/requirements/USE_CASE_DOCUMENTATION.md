@@ -60,7 +60,7 @@ Musician launches application (opens in Meter Mode by default) or switches to Me
 2. Musician positions device 30-100 cm from instrument sound source
 3. Musician plays single note on instrument
 4. Application captures audio through microphone
-5. Application analyzes audio using FFT-based pitch detection
+5. Application analyzes audio using McLeod Pitch Period Method
 6. Application identifies fundamental frequency
 7. Application maps frequency to nearest chromatic note (C through B with octave 1-8)
 8. Application calculates cent deviation from target frequency based on current reference pitch
@@ -149,7 +149,7 @@ Musician launches application (opens in Meter Mode by default) or switches to Me
 - User understands basic music terminology (note names) or will consult help
 - Ambient noise level permits signal-to-noise ratio ≥40 dB
 - User tunes one string/note at a time (monophonic detection only)
-- Device has sufficient CPU for real-time FFT processing
+- Device has sufficient CPU for real-time autocorrelation processing
 
 **Other Information:**
 - Pure interval reference marks at -13.7 cents (pure major third) and +15.6 cents (pure minor third) provide educational reference for historical temperaments

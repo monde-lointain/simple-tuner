@@ -177,12 +177,12 @@ This Software Requirements Specification should be read in conjunction with the 
 
 **Audio and Signal Processing References:**
 
-10. **"Digital Audio Signal Processing" by Udo Zölzer**  
-    John Wiley & Sons, 2nd Edition  
-    Reference for FFT-based pitch detection algorithms and audio processing techniques
+10. **"A Smarter Way to Find Pitch" by Philip McLeod**
+    Proceedings of the 2005 International Computer Music Conference (ICMC 2005)
+    Reference for McLeod Pitch Period Method (PPM) using Normalized Square Difference Function (NSDF)
 
-11. **"Music and Acoustics" by Philip M. Morse**  
-    Acoustical Society of America  
+11. **"Music and Acoustics" by Philip M. Morse**
+    Acoustical Society of America
     Foundation for equal temperament calculations and frequency relationships
 
 **Regulatory and Compliance:**
@@ -206,7 +206,7 @@ This Software Requirements Specification should be read in conjunction with the 
 - **API:** Application Programming Interface
 - **CPU:** Central Processing Unit
 - **DSP:** Digital Signal Processing
-- **FFT:** Fast Fourier Transform
+- **NSDF:** Normalized Square Difference Function
 - **FPS:** Frames Per Second
 - **GUI:** Graphical User Interface
 - **Hz:** Hertz (cycles per second)
@@ -264,7 +264,7 @@ While the application operates independently after installation, it is distribut
 **Framework Architecture:**
 The application is built upon the JUCE framework, which provides:
 - Cross-platform audio I/O abstraction layer
-- Digital signal processing utilities for FFT and frequency analysis
+- Digital signal processing utilities for autocorrelation and pitch analysis
 - GUI component library with touch event handling
 - Thread management for real-time audio processing
 - Platform-specific code generation at build time
@@ -577,7 +577,7 @@ The following constraints establish boundaries for architecture, technology sele
 - **Impact:** Modern C++ features from C++20+ (concepts, ranges, coroutines) unavailable
 
 **CON-4: No Third-Party Audio Libraries**
-- **Constraint:** Audio processing, FFT algorithms, and DSP operations must use JUCE-provided or self-implemented code; no external audio libraries
+- **Constraint:** Audio processing, autocorrelation algorithms, and DSP operations must use JUCE-provided or self-implemented code; no external audio libraries
 - **Rationale:** Minimizes dependency conflicts, licensing complications, and binary size growth
 - **Impact:** Advanced DSP techniques not provided by JUCE require custom implementation
 
@@ -591,7 +591,7 @@ The following constraints establish boundaries for architecture, technology sele
 **CON-6: Low-Latency Requirement**
 - **Constraint:** Pitch detection latency from microphone input to display update must not exceed 30ms on 90% of supported devices
 - **Rationale:** Delays beyond 30ms create noticeable lag between playing note and seeing tuning feedback, degrading user experience
-- **Impact:** Requires efficient FFT windowing, optimized frequency analysis algorithms, and minimal UI update overhead
+- **Impact:** Requires efficient autocorrelation computation, optimized pitch period analysis algorithms, and minimal UI update overhead
 
 **CON-7: Application Size Limit**
 - **Constraint:** Final application binary must not exceed 25 MB installed size
@@ -601,7 +601,7 @@ The following constraints establish boundaries for architecture, technology sele
 **CON-8: Memory Footprint**
 - **Constraint:** Application memory usage must not exceed 50 MB during normal operation
 - **Rationale:** Prevents memory warnings and forced termination on devices with 2 GB RAM
-- **Impact:** Limits audio buffer sizes, FFT window lengths, and UI complexity; requires efficient memory management
+- **Impact:** Limits audio buffer sizes, autocorrelation buffer lengths, and UI complexity; requires efficient memory management
 
 **CON-9: CPU Utilization**
 - **Constraint:** Audio processing must not exceed 15% CPU utilization on target devices; UI rendering must not drop below 30 FPS
@@ -710,7 +710,7 @@ This section documents assumptions about the operating environment, user capabil
 - **Mitigation:** Test on minimum-specification devices; adjust font sizes and meter precision to maintain usability
 
 **AS-HW-5: Processing Power**
-- **Assumption:** Target device CPUs can execute FFT-based pitch detection algorithms within real-time constraints on audio thread
+- **Assumption:** Target device CPUs can execute autocorrelation-based pitch detection algorithms within real-time constraints on audio thread
 - **Validation:** Modern mobile processors include SIMD instructions (NEON on ARM) and multi-core architectures enabling efficient DSP
 - **Risk if invalid:** Older or low-end devices may experience audio dropouts, high latency, or excessive battery drain
 - **Mitigation:** Optimize algorithms for efficiency; test performance on minimum-specification devices; document device compatibility limitations if necessary
@@ -791,7 +791,7 @@ This section documents assumptions about the operating environment, user capabil
 - **Assumption:** Room acoustics do not create excessive reverberation or resonance significantly distorting captured audio
 - **Validation:** Most practice environments have acceptable acoustic properties for pitch detection
 - **Risk if invalid:** Highly reverberant spaces may cause detection errors from overlapping reflections
-- **Mitigation:** FFT analysis less sensitive to reverberation than time-domain methods; test in various acoustic spaces
+- **Mitigation:** McLeod PPM autocorrelation approach naturally handles moderate reverberation; test in various acoustic spaces
 
 **AS-ENV-3: Device Positioning**
 - **Assumption:** Users position device microphone within 0.3-2 meters of instrument sound source for adequate signal level
@@ -859,7 +859,7 @@ This section details the functional requirements for each major system feature. 
 
 Meter Mode provides real-time chromatic pitch detection by continuously analyzing microphone input and displaying the detected note name, octave, pitch deviation in cents, and visual tuning indicators. This mode operates automatically without requiring manual note selection, accommodating musicians tuning any chromatic instrument across a seven-octave range.
 
-The system employs FFT-based frequency analysis to identify the fundamental frequency of incoming audio, maps detected frequencies to the nearest note in 12-tone equal temperament, calculates deviation from the target frequency in cents, and updates the visual display with minimal latency. The analog-style tuning meter provides intuitive visual feedback through needle position, colored zones, and reference markings.
+The system employs the McLeod Pitch Period Method using autocorrelation-based analysis to identify the fundamental frequency of incoming audio, maps detected frequencies to the nearest note in 12-tone equal temperament, calculates deviation from the target frequency in cents, and updates the visual display with minimal latency. The analog-style tuning meter provides intuitive visual feedback through needle position, colored zones, and reference markings.
 
 **Priority:** CRITICAL  
 **Stimulus/Response Sequences:**
@@ -879,9 +879,9 @@ The system shall continuously monitor microphone input when Meter Mode is active
 **Priority:** CRITICAL  
 The system shall detect fundamental frequencies across the range from 32.70 Hz (C1) to 4186.01 Hz (C8), encompassing seven complete octaves of chromatic pitch detection.
 
-**FR-003: Fundamental Frequency Extraction**  
-**Priority:** CRITICAL  
-The system shall extract the fundamental frequency from audio input using FFT-based analysis with a minimum frequency resolution of 0.5 Hz, distinguishing between fundamental and harmonic overtones.
+**FR-003: Fundamental Frequency Extraction**
+**Priority:** CRITICAL
+The system shall extract the fundamental frequency from audio input using the McLeod Pitch Period Method with autocorrelation-based analysis, achieving a minimum frequency resolution of 0.5 Hz and distinguishing between fundamental and harmonic overtones using the Normalized Square Difference Function (NSDF).
 
 **FR-004: Noise Rejection**  
 **Priority:** HIGH  
@@ -1420,7 +1420,7 @@ The system shall automatically adapt to the device's native audio sample rate wi
 - 48 kHz (professional standard, common on Android)
 - Other rates: 22.05 kHz, 96 kHz if device supports
 
-All frequency calculations and FFT parameters shall scale appropriately for active sample rate.
+All frequency calculations and autocorrelation parameters shall scale appropriately for active sample rate.
 
 **FR-088: Buffer Size Optimization**  
 **Priority:** HIGH  
@@ -1701,7 +1701,7 @@ These runtime structures are recalculated or reset on each application launch an
 - **Update Frequency:** Continuous during pitch detection (20+ Hz update rate)
 - **Lifetime:** Transient; exists only during active pitch detection
 - **Usage Context:** Meter Mode pitch detection calculations
-- **Dependencies:** Input audio buffer data, FFT analysis results
+- **Dependencies:** Input audio buffer data, autocorrelation analysis results
 
 **DR-006: confidence**
 - **Description:** Statistical confidence level of pitch detection result, ranging from 0.0 (no confidence) to 1.0 (maximum confidence)
@@ -1711,7 +1711,7 @@ These runtime structures are recalculated or reset on each application launch an
 - **Update Frequency:** Continuous during pitch detection
 - **Lifetime:** Transient; recalculated with each analysis frame
 - **Usage Context:** Determines whether to display detection result or show "no signal" state
-- **Dependencies:** FFT spectral analysis, harmonic presence analysis
+- **Dependencies:** NSDF peak analysis, autocorrelation clarity
 
 **DR-007: noteName**
 - **Description:** The chromatic note name of detected or selected pitch
@@ -2418,7 +2418,7 @@ The application shall interface with JUCE framework version 7.0 or later, utiliz
 - **juce_audio_basics:** Audio buffer manipulation, sample type definitions
 - **juce_audio_devices:** Audio I/O device management, AudioDeviceManager
 - **juce_audio_processors:** Audio processing base classes (if used for modular design)
-- **juce_dsp:** FFT classes, windowing functions, DSP utilities
+- **juce_dsp:** Mathematical functions, DSP utilities for autocorrelation
 - **juce_gui_basics:** Component base classes, graphics contexts, touch event handling
 - **juce_gui_extra:** Additional GUI utilities if needed
 - **juce_core:** String, memory, thread, and file utilities
@@ -2435,14 +2435,15 @@ The application shall interface with JUCE's `AudioDeviceManager` class to:
 - Handle device changes and errors
 - Release audio resources when backgrounded
 
-**SI-003: FFT Interface**  
-**Priority:** CRITICAL  
-The application shall use JUCE's `dsp::FFT` class for frequency analysis:
-- Initialize FFT with appropriate order (e.g., 12 for 4096-point FFT)
-- Apply windowing function (`dsp::WindowingFunction` with Hann or Hamming window)
-- Perform forward FFT on audio input buffers
-- Access frequency bin magnitudes for fundamental frequency detection
-- Interface shall support FFT sizes from 2048 to 8192 points for flexibility in frequency resolution vs. latency tradeoff
+**SI-003: Autocorrelation Implementation**
+**Priority:** CRITICAL
+The application shall implement autocorrelation-based pitch detection using McLeod Pitch Period Method:
+- Compute Normalized Square Difference Function (NSDF) over audio input buffers
+- Identify peak locations in NSDF corresponding to pitch period candidates
+- Apply parabolic interpolation for sub-sample period accuracy
+- Select highest-clarity peak as fundamental period
+- Convert period to frequency for pitch detection
+- Interface shall support analysis window sizes from 2048 to 8192 samples for flexibility in frequency resolution vs. latency tradeoff
 
 **SI-004: Component Hierarchy Interface**  
 **Priority:** CRITICAL  
@@ -3818,7 +3819,7 @@ This section addresses additional requirements not covered in previous sections.
 
 **Equal temperament (12-tone equal temperament):** A musical tuning system dividing the octave into twelve equal intervals (semitones), where each semitone represents a frequency ratio of 2^(1/12) ≈ 1.05946. This is the standard tuning system for most modern Western music.
 
-**FFT (Fast Fourier Transform):** An efficient algorithm for computing the Discrete Fourier Transform, which converts a time-domain signal (audio waveform) into a frequency-domain representation (spectrum) revealing which frequencies are present and their amplitudes.
+**Autocorrelation:** A signal processing technique that measures the similarity of a signal with a time-shifted version of itself, used in pitch detection to identify periodic patterns corresponding to fundamental frequency.
 
 **Foreground / Background:** Application states on mobile platforms. Foreground: Application visible on screen, receiving user input and system resources. Background: Application not visible, with limited resources and restricted functionality.
 
@@ -3826,7 +3827,7 @@ This section addresses additional requirements not covered in previous sections.
 
 **Fundamental frequency:** The lowest frequency component of a periodic waveform (such as a musical note). The fundamental frequency determines the perceived pitch, even though higher harmonics (overtones) are also present.
 
-**Hann window (Hanning window):** A smoothing function applied to audio data before FFT analysis to reduce spectral leakage artifacts. It gradually tapers the signal to zero at both ends of the analysis window.
+**McLeod Pitch Period Method (McLeod PPM):** A pitch detection algorithm using the Normalized Square Difference Function (NSDF) to identify pitch periods through autocorrelation analysis, providing robust fundamental frequency detection in the presence of harmonics and noise.
 
 **Harmonic / Overtone:** Frequency components of a musical sound that are integer multiples of the fundamental frequency. For example, a note with fundamental 100 Hz contains harmonics at 200 Hz (2nd harmonic), 300 Hz (3rd harmonic), etc.
 
@@ -3843,6 +3844,8 @@ This section addresses additional requirements not covered in previous sections.
 **MIDI note number:** A numerical representation of musical pitches where middle C (C4) = 60, and each semitone increases the number by 1 (C#4 = 61, D4 = 62, etc.). A4 (440 Hz) = 69.
 
 **Octave:** A musical interval where the higher pitch has exactly double the frequency of the lower pitch. Notes separated by one octave have the same name (e.g., A3 at 220 Hz and A4 at 440 Hz).
+
+**NSDF (Normalized Square Difference Function):** A mathematical function used in the McLeod Pitch Period Method to compute autocorrelation with normalization, producing clear peaks at lag values corresponding to the fundamental period of a periodic signal.
 
 **Offline operation:** Application functionality that does not require network connectivity, functioning entirely using local device resources.
 
@@ -3956,7 +3959,7 @@ This diagram illustrates the major subsystems within the Chromatic Tuner applica
 │                         Application Logic Layer                        │
 │  ┌─────────────────────┐  ┌─────────────────────┐  ┌──────────────┐  │
 │  │  Pitch Detection    │  │  Tone Generation    │  │  Config Mgr  │  │
-│  │  - FFT Analysis     │  │  - Sine Synthesis   │  │  - Load/Save │  │
+│  │  - NSDF/McLeod PPM  │  │  - Sine Synthesis   │  │  - Load/Save │  │
 │  │  - Freq → Note      │  │  - Freq Calculation │  │  - Validation│  │
 │  │  - Cent Calculation │  │  - Amplitude Control│  │  - Defaults  │  │
 │  └──────────┬──────────┘  └──────────┬──────────┘  └──────────────┘  │
@@ -3968,8 +3971,8 @@ This diagram illustrates the major subsystems within the Chromatic Tuner applica
 │                       JUCE Framework Layer                              │
 │  ┌──────────────────────┐    ┌────────────────────┐                   │
 │  │  Audio Device Mgr    │    │  DSP Utilities     │                   │
-│  │  - Device Init       │    │  - FFT (dsp::FFT)  │                   │
-│  │  - Callback Routing  │    │  - Windowing       │                   │
+│  │  - Device Init       │    │  - Autocorrelation │                   │
+│  │  - Callback Routing  │    │  - NSDF Compute    │                   │
 │  │  - Buffer Management │    │  - Math Functions  │                   │
 │  └──────────┬───────────┘    └────────────────────┘                   │
 └─────────────┼──────────────────────────────────────────────────────────┘
@@ -4039,22 +4042,23 @@ This diagram illustrates the flow of data during pitch detection in Meter Mode.
        │ Audio Buffer
        ▼
 ┌───────────────────────────────────────────┐
-│  Pitch Detection Algorithm                │
-│  Step 1: Apply Hann Window to Buffer      │
+│  Pitch Detection Algorithm (McLeod PPM)   │
+│  Step 1: Compute Autocorrelation          │
 └──────┬────────────────────────────────────┘
-       │ Windowed Audio Buffer
+       │ Autocorrelation Function
        ▼
 ┌───────────────────────────────────────────┐
-│  Step 2: Compute FFT (e.g., 4096-point)   │
-│  - Time domain → Frequency domain         │
+│  Step 2: Compute NSDF                     │
+│  - Normalize autocorrelation              │
 └──────┬────────────────────────────────────┘
-       │ Frequency Spectrum (Magnitude)
+       │ NSDF Values
        ▼
 ┌───────────────────────────────────────────┐
-│  Step 3: Identify Fundamental Frequency   │
-│  - Find peak in expected range (30-4200Hz)│
-│  - Distinguish from harmonics             │
-│  - Calculate confidence score             │
+│  Step 3: Identify Fundamental Period      │
+│  - Find NSDF peaks for period candidates  │
+│  - Apply parabolic interpolation          │
+│  - Select highest-clarity peak            │
+│  - Convert period to frequency            │
 └──────┬────────────────────────────────────┘
        │ Fundamental Frequency (Hz), Confidence
        ▼
@@ -4106,8 +4110,8 @@ This diagram illustrates the flow of data during pitch detection in Meter Mode.
 
 **Data Transformations:**
 1. Physical sound → electrical signal → digital samples
-2. Time-domain samples → frequency-domain spectrum (FFT)
-3. Spectrum → fundamental frequency (peak detection)
+2. Time-domain samples → autocorrelation function → NSDF
+3. NSDF → fundamental period (peak detection) → fundamental frequency
 4. Frequency → note name and octave (logarithmic mapping)
 5. Frequency → cent deviation (logarithmic comparison)
 6. Cent deviation → tuning status (threshold comparison)
@@ -4115,7 +4119,7 @@ This diagram illustrates the flow of data during pitch detection in Meter Mode.
 
 **Performance Considerations:**
 - Steps 1-6 must complete within audio callback deadline (~5-10 ms)
-- FFT is most computationally intensive step; optimized implementation critical
+- Autocorrelation and NSDF computation are most computationally intensive steps; optimized implementation critical
 - UI update (Step 7) occurs asynchronously to avoid blocking audio thread
 
 ### B.4 Data Flow Diagram - Tone Generation (Sound Mode)
