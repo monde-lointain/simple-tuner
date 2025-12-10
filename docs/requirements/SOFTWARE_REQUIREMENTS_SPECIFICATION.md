@@ -1,12 +1,12 @@
 # Software Requirements Specification
 
-## Chromatic Tuner Mobile Application
+## SimpleTuner
 
 ## 1. Introduction
 
 ### 1.1 Purpose
 
-This Software Requirements Specification (SRS) document provides a comprehensive technical description of the functional and non-functional requirements for the Chromatic Tuner mobile application. This document is intended for:
+This Software Requirements Specification (SRS) document provides a comprehensive technical description of the functional and non-functional requirements for SimpleTuner. This document is intended for:
 
 - **Development team members** implementing the application using the JUCE framework
 - **Quality assurance engineers** developing test plans and validation procedures
@@ -59,7 +59,7 @@ All requirements are classified using the following priority scheme:
 
 ### 1.3 Project Scope
 
-The Chromatic Tuner mobile application provides musicians with a professional-grade, offline-capable tool for accurate instrument tuning through real-time pitch detection and reference tone generation. The application operates entirely on-device without network connectivity requirements, ensuring reliable functionality during practice sessions, rehearsals, and performances in any location.
+SimpleTuner provides musicians with a professional-grade, offline-capable tool for accurate instrument tuning through real-time pitch detection and reference tone generation. The application operates entirely on-device without network connectivity requirements, ensuring reliable functionality during practice sessions, rehearsals, and performances in any location.
 
 **In Scope:**
 
@@ -130,7 +130,7 @@ This Software Requirements Specification should be read in conjunction with the 
 
 **Project Documentation:**
 
-1. **Vision and Scope Document - Chromatic Tuner Mobile Application**  
+1. **Vision and Scope Document - SimpleTuner**  
    Version 1.0, December 10, 2025  
    Defines business requirements, objectives, stakeholder profiles, and project scope boundaries
 
@@ -228,7 +228,7 @@ This Software Requirements Specification should be read in conjunction with the 
 
 ### 2.1 Product Perspective
 
-The Chromatic Tuner mobile application is a self-contained, standalone software product designed for iOS and Android mobile devices. It operates independently without reliance on external systems, network services, or companion applications.
+SimpleTuner is a self-contained, standalone software product designed for iOS and Android mobile devices. It operates independently without reliance on external systems, network services, or companion applications.
 
 #### 2.1.1 System Context
 
@@ -4150,42 +4150,42 @@ This diagram illustrates the major subsystems within the Chromatic Tuner applica
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
 │                        Presentation Layer                             │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
-│  │  Meter Mode UI   │  │  Sound Mode UI   │  │  Settings UI     │   │
-│  │  - Note Display  │  │  - Note Selector │  │  - Pitch Config  │   │
-│  │  - Tuning Meter  │  │  - Tone Toggle   │  │  - Help Screen   │   │
-│  │  - Status Ind.   │  │  - Status Display│  │  - About         │   │
-│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘   │
-└───────────┼──────────────────────┼──────────────────────┼─────────────┘
-            │                      │                      │
-            │  Display Updates     │  Display Updates     │  Prefs R/W
-            │                      │                      │
-┌───────────▼──────────────────────▼──────────────────────▼─────────────┐
-│                         Application Logic Layer                        │
-│  ┌─────────────────────┐  ┌─────────────────────┐  ┌──────────────┐  │
-│  │  Pitch Detection    │  │  Tone Generation    │  │  Config Mgr  │  │
-│  │  - NSDF/McLeod PPM  │  │  - Sine Synthesis   │  │  - Load/Save │  │
-│  │  - Freq → Note      │  │  - Freq Calculation │  │  - Validation│  │
-│  │  - Cent Calculation │  │  - Amplitude Control│  │  - Defaults  │  │
-│  └──────────┬──────────┘  └──────────┬──────────┘  └──────────────┘  │
-└─────────────┼─────────────────────────┼────────────────────────────────┘
-              │                         │
-              │  Process Audio          │  Generate Audio
-              │                         │
-┌─────────────▼─────────────────────────▼────────────────────────────────┐
-│                       JUCE Framework Layer                              │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐     │
+│  │  Meter Mode UI   │  │  Sound Mode UI   │  │  Settings UI     │     │
+│  │  - Note Display  │  │  - Note Selector │  │  - Pitch Config  │     │
+│  │  - Tuning Meter  │  │  - Tone Toggle   │  │  - Help Screen   │     │
+│  │  - Status Ind.   │  │  - Status Display│  │  - About         │     │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘     │
+└───────────┼─────────────────────┼─────────────────────┼───────────────┘
+            │                     │                     │
+            │  Display Updates    │  Display Updates    │  Prefs R/W
+            │                     │                     │
+┌───────────▼─────────────────────▼─────────────────────▼───────────────┐
+│                         Application Logic Layer                       │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌──────────────┐   │
+│  │  Pitch Detection    │  │  Tone Generation    │  │  Config Mgr  │   │
+│  │  - NSDF/McLeod PPM  │  │  - Sine Synthesis   │  │  - Load/Save │   │
+│  │  - Freq → Note      │  │  - Freq Calculation │  │  - Validation│   │
+│  │  - Cent Calculation │  │  - Amplitude Control│  │  - Defaults  │   │
+│  └──────────┬──────────┘  └──────────┬──────────┘  └──────────────┘   │
+└─────────────┼────────────────────────┼────────────────────────────────┘
+              │                        │
+              │  Process Audio         │  Generate Audio
+              │                        │
+┌─────────────▼────────────────────────▼────────────────────────────────┐
+│                       JUCE Framework Layer                            │
 │  ┌──────────────────────┐    ┌────────────────────┐                   │
 │  │  Audio Device Mgr    │    │  DSP Utilities     │                   │
 │  │  - Device Init       │    │  - Autocorrelation │                   │
 │  │  - Callback Routing  │    │  - NSDF Compute    │                   │
 │  │  - Buffer Management │    │  - Math Functions  │                   │
 │  └──────────┬───────────┘    └────────────────────┘                   │
-└─────────────┼──────────────────────────────────────────────────────────┘
+└─────────────┼─────────────────────────────────────────────────────────┘
               │
               │  Platform Audio API Calls
               │
-┌─────────────▼──────────────────────────────────────────────────────────┐
-│                   Platform Native Layer                                 │
+┌─────────────▼─────────────────────────────────────────────────────────┐
+│                   Platform Native Layer                               │
 │  ┌──────────────────────────────┐  ┌──────────────────────────────┐   │
 │  │  iOS Platform Services       │  │  Android Platform Services   │   │
 │  │  - Core Audio (I/O)          │  │  - OpenSL ES / AAudio        │   │
@@ -4193,7 +4193,7 @@ This diagram illustrates the major subsystems within the Chromatic Tuner applica
 │  │  - UserDefaults (Storage)    │  │  - SharedPreferences         │   │
 │  │  - UIKit (UI Framework)      │  │  - Android UI Framework      │   │
 │  └──────────────────────────────┘  └──────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 **Layer Responsibilities:**

@@ -1,5 +1,7 @@
 # Vision and Scope Document
 
+## SimpleTuner
+
 ## 1. Business Requirements
 
 ### 1.1 Background

@@ -1,9 +1,9 @@
-# Test Plan: Chromatic Tuner Mobile Application
+# Test Plan: SimpleTuner
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This test plan defines the comprehensive testing strategy for the Chromatic Tuner mobile application to ensure it meets all functional requirements, performance standards, and quality attributes specified in the requirements documentation.
+This test plan defines the comprehensive testing strategy for SimpleTuner to ensure it meets all functional requirements, performance standards, and quality attributes specified in the requirements documentation.
 
 ### 1.2 Scope
 Testing covers all application functionality across desktop (unit testing) and mobile (iOS/Android) platforms, including:

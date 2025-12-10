@@ -1,11 +1,11 @@
 # Use Case Documentation
 
-## Chromatic Tuner Mobile Application
+## SimpleTuner
 
 **Document Version:** 1.0  
 **Date:** December 10, 2025  
 **Author:** Requirements Engineering Team  
-**Project:** Chromatic Tuner Mobile Application
+**Project:** SimpleTuner
 
 ---
 
