@@ -100,7 +100,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Documentation: Build instructions, architecture overview
 
 **Success Criteria (Week 1):**
-- ✓ Desktop test executable builds on macOS/Linux/Windows
+- ✓ Desktop test executable builds
 - ✓ Unit test framework executes and reports results
 - ✓ CI pipeline triggers on commit and reports status
 - ✓ Shared library code compiles without platform-specific dependencies
@@ -1076,7 +1076,7 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - **Build System:** CMake
 - **Test Framework:** Google Test
 - **Mock Platform Services:** MockAudioInput, MockAudioOutput, MockConfigStorage, MockPermissions
-- **Platforms:** macOS, Linux, Windows (developer workstations + CI runners)
+- **Platforms:** Linux (developer workstations + CI runners)
 
 **Execution:**
 1. Developer writes feature code in `src/shared/`
