@@ -13,7 +13,7 @@
 #   CPPCHECK_ENABLE_CHECKS, which is passed to the --enable= argument
 #     By default, "style" is used
 #   CPPCHECK_DIRS, which is a CMake list of directories to include in cppcheck analysis
-#     By default, the src and test directories are included
+#     By default, the src and tests directories are included
 #   CPPCHECK_INCLUDE_DIRS, which is a CMake list of directories to pass as include arguments
 #     to CppCheck
 #     By default, no include directories are specified.
@@ -33,7 +33,7 @@ endif()
 
 # --- User-configurable options ---
 set(CPPCHECK_ENABLE_CHECKS "style" CACHE STRING "Checks to enable in cppcheck")
-set(CPPCHECK_DIRS "src" CACHE STRING "Directories to analyze with cppcheck")
+set(CPPCHECK_DIRS "src;tests" CACHE STRING "Directories to analyze with cppcheck")
 set(CPPCHECK_INCLUDE_DIRS "" CACHE STRING "Include directories for cppcheck")
 set(CPPCHECK_EXCLUDES "" CACHE STRING "Files/directories to exclude from cppcheck")
 set(CPPCHECK_ADDITIONAL_DIRS "" CACHE STRING "Additional directories to analyze")

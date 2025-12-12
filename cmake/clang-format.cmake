@@ -8,7 +8,7 @@
 #   CLANG_FORMAT_EXCLUDE_DIRS, which is a CMake list of directories to exclude from formatting
 #     By default, no directories are excluded
 #   CLANG_FORMAT_DIRS, which is a CMake list of directories to include in formatting
-#     By default, the src and test directories are included
+#     By default, the src and tests directories are included
 #   CLANG_FORMAT_FILETYPES, which is a CMake list of file types to include in formatting,
 #     specified as globs (e.g.: "*.c")
 #     By default, we format *.c, *.h, *.cpp, *.hpp
@@ -27,7 +27,7 @@ if(CLANG_FORMAT)
   endif()
 
   if(NOT CLANG_FORMAT_DIRS)
-    set(CLANG_FORMAT_DIRS src CACHE STRING "CMake list of directories to format using clang-format.")
+    set(CLANG_FORMAT_DIRS src tests CACHE STRING "CMake list of directories to format using clang-format.")
   endif()
 
   if(NOT CLANG_FORMAT_FILETYPES)

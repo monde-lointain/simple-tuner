@@ -55,5 +55,6 @@ compile_commands.json
 .claude/
 
 # JUCE
+JuceLibraryCode/
 JUCEBuilds/
-JUCELibraryCode/
+JuceLibraryCode/

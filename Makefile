@@ -2,7 +2,10 @@
 .PHONY: help configure configure-release configure-debug configure-coverage \
         configure-sanitize configure-no-tests build rebuild clean test coverage \
         coverage-html format format-check tidy cppcheck complexity analyze docs \
-        sloccount all
+        sloccount all \
+        configure-android build-android clean-android \
+        configure-ios build-ios-device build-ios-simulator build-ios clean-ios \
+        build-mobile clean-mobile
 
 # Build directory
 BUILD_DIR := build
@@ -21,6 +24,22 @@ CMAKE_GENERATOR ?= "Unix Makefiles"
 
 # Number of parallel jobs
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
+
+# Android directory
+ANDROID_DIR := JUCEBuilds/Android
+
+# Android build type (debug or release)
+ANDROID_BUILD_TYPE ?= debug
+
+# iOS directory
+IOS_DIR := JUCEBuilds/iOS
+
+# iOS build configuration
+IOS_BUILD_CONFIG ?= Debug
+
+# iOS SDK selection
+IOS_SDK_DEVICE := iphoneos
+IOS_SDK_SIM := iphonesimulator
 
 #######################
 # Configuration Targets
@@ -73,6 +92,10 @@ configure-no-tests: ## Configure build without tests (set BUILD_TYPE for Debug/R
 #################
 
 build: ## Build the project (requires prior configure)
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		echo "Error: Build not configured. Run 'make configure' first."; \
+		exit 1; \
+	fi
 	cmake --build $(BUILD_DIR) -j $(JOBS)
 
 rebuild: clean configure build ## Clean, configure, and build from scratch
@@ -86,10 +109,27 @@ clean: ## Remove build directory
 ##################
 
 test: ## Run tests
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		echo "Error: Build not configured. Run 'make configure && make build' first."; \
+		exit 1; \
+	fi
 	ctest --test-dir $(BUILD_DIR)/tests --output-on-failure
 
 coverage: ## Generate coverage reports (requires configure-coverage)
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		echo "Error: Build not configured. Run 'make configure-coverage && make build' first."; \
+		exit 1; \
+	fi
 	cmake --build $(BUILD_DIR)/tests --target coverage
+
+coverage-html: coverage ## Generate coverage and open HTML report
+	@if [ -f "$(BUILD_DIR)/coverage/index.html" ]; then \
+		xdg-open $(BUILD_DIR)/coverage/index.html 2>/dev/null || \
+		open $(BUILD_DIR)/coverage/index.html 2>/dev/null || \
+		echo "Coverage report: $(BUILD_DIR)/coverage/index.html"; \
+	else \
+		echo "Error: Coverage HTML not found."; \
+	fi
 
 ####################
 # Analysis Targets
@@ -107,6 +147,10 @@ format-check: ## Check code formatting (dry-run)
 		xargs clang-format --dry-run --Werror
 
 tidy: ## Run clang-tidy
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		echo "Error: Build not configured. Run 'make configure' first."; \
+		exit 1; \
+	fi
 	cmake --build $(BUILD_DIR) --target tidy
 
 cppcheck: ## Run cppcheck
@@ -139,7 +183,79 @@ sloccount: ## Generate code metrics
 	fi
 	cmake --build $(BUILD_DIR) --target sloccount
 
-all: configure build test ## Configure, build, and test
+####################
+# Mobile Targets
+####################
+
+configure-android: ## Configure Android build
+	@echo "Saving Projucer project..."
+	Projucer --resave SimpleTuner.jucer
+	@echo "Configuring Android build ($(ANDROID_BUILD_TYPE))..."
+	@if [ ! -f "$(ANDROID_DIR)/gradlew" ]; then \
+		echo "Error: Android build not found at $(ANDROID_DIR)"; \
+		exit 1; \
+	fi
+
+build-android: configure-android ## Build Android APK
+	@echo "Building Android APK ($(ANDROID_BUILD_TYPE))..."
+	cd $(ANDROID_DIR) && ./gradlew assemble$(shell echo $(ANDROID_BUILD_TYPE) | sed 's/\(.\)/\u\1/')
+
+clean-android: ## Clean Android build artifacts
+	@echo "Cleaning Android build..."
+	cd $(ANDROID_DIR) && ./gradlew clean
+
+configure-ios: ## Check iOS build prerequisites
+	@echo "Saving Projucer project..."
+	Projucer --resave SimpleTuner.jucer
+	@echo "Checking iOS build prerequisites..."
+	@if [ ! -d "$(IOS_DIR)/SimpleTuner.xcodeproj" ]; then \
+		echo "Error: iOS Xcode project not found at $(IOS_DIR)"; \
+		exit 1; \
+	fi
+	@if ! command -v xcodebuild >/dev/null 2>&1; then \
+		echo "Error: xcodebuild not found. iOS builds require macOS with Xcode."; \
+		exit 1; \
+	fi
+
+build-ios-device: configure-ios ## Build iOS app for physical devices (arm64)
+	@echo "Building iOS app for device ($(IOS_BUILD_CONFIG))..."
+	xcodebuild -project $(IOS_DIR)/SimpleTuner.xcodeproj \
+		-scheme SimpleTuner \
+		-configuration $(IOS_BUILD_CONFIG) \
+		-sdk $(IOS_SDK_DEVICE) \
+		-arch arm64 \
+		build
+
+build-ios-simulator: configure-ios ## Build iOS app for simulator (x86_64/arm64)
+	@echo "Building iOS app for simulator ($(IOS_BUILD_CONFIG))..."
+	xcodebuild -project $(IOS_DIR)/SimpleTuner.xcodeproj \
+		-scheme SimpleTuner \
+		-configuration $(IOS_BUILD_CONFIG) \
+		-sdk $(IOS_SDK_SIM) \
+		build
+
+build-ios: build-ios-device build-ios-simulator ## Build iOS app for both device and simulator
+
+clean-ios: ## Clean iOS build artifacts
+	@echo "Cleaning iOS build..."
+	@if command -v xcodebuild >/dev/null 2>&1; then \
+		xcodebuild -project $(IOS_DIR)/SimpleTuner.xcodeproj \
+			-scheme SimpleTuner \
+			clean; \
+	else \
+		rm -rf $(IOS_DIR)/build; \
+	fi
+
+build-mobile: build-android ## Build mobile apps (Android + iOS if on macOS)
+	@if command -v xcodebuild >/dev/null 2>&1; then \
+		$(MAKE) build-ios; \
+	else \
+		echo "Skipping iOS build (xcodebuild not available)"; \
+	fi
+
+clean-mobile: clean-android clean-ios ## Clean all mobile build artifacts
+
+all: configure build test build-mobile ## Configure, build, test, and build mobile apps
 
 help: ## Display this help message
 	@echo "Usage: make [target]"
@@ -156,9 +272,14 @@ help: ## Display this help message
 	@echo "  JOBS         Parallel jobs (default: nproc)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make all                         # Quick start: configure + build + test"
+	@echo "  make all                         # Quick start: configure + build + test + mobile"
 	@echo "  make BUILD_TESTS=OFF configure build  # Build without tests"
 	@echo "  make configure-no-tests build    # Build without tests"
 	@echo "  make configure-coverage build test coverage  # Coverage workflow"
 	@echo "  make SANITIZER=address configure-sanitize build test  # Sanitizer build"
 	@echo "  make analyze                     # Run all static analysis"
+	@echo "  make build-android               # Build Android APK (arm64-v8a, debug)"
+	@echo "  make ANDROID_BUILD_TYPE=release build-android  # Build release APK"
+	@echo "  make build-ios-device            # Build iOS for physical devices"
+	@echo "  make build-ios-simulator         # Build iOS for simulator"
+	@echo "  make build-mobile                # Build all mobile platforms"

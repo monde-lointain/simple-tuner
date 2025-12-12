@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="c7MvMj" name="SimpleTuner" projectType="guiapp" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" headerPath="D:\development\projects\cpp\simple-tuner\include">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" headerPath="/home/clydew372/development/projects/cpp/simple-tuner/include">
   <MAINGROUP id="CDgtOB" name="SimpleTuner">
     <GROUP id="{A4DE6196-77ED-2C90-A03F-B34FFFC1C754}" name="algorithms">
       <FILE id="lmlQXP" name="FrequencyCalculator.cpp" compile="1" resource="0"

@@ -7,7 +7,7 @@
 # You can control the behavior of lizard by setting the following variables
 # before you include this module:
 #   LIZARD_DIRS, which is a CMake list of directories to include in complexity analysis
-#     By default, the src and test directories are included
+#     By default, the src and tests directories are included
 #   LIZARD_EXCLUDES, which is a CMake list of directories/files to exclude from analysis
 #     By default, this variable is not set
 #   LIZARD_LENGTH_LIMIT, which specifies the maximum funtion length in lines
@@ -30,7 +30,7 @@ endif()
 # -----------------------------
 # Default configuration
 # -----------------------------
-set(DEFAULT_LIZARD_DIRS "src")
+set(DEFAULT_LIZARD_DIRS "src;tests")
 set(DEFAULT_LENGTH_LIMIT 60)
 set(DEFAULT_CCN_LIMIT 10)
 set(DEFAULT_ARG_LIMIT 6)

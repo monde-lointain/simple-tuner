@@ -28,6 +28,7 @@ if(SLOCCount)
 	if(NOT SLOCCOUNT_DIRS)
 		set(SLOCCOUNT_DIRS
 			src
+			tests
 			CACHE STRING "Directories to analyze with SLOCCount.")
 	endif()
 

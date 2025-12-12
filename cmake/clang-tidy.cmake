@@ -11,7 +11,7 @@
 # You can control the behavior of clang-tidy by setting the following variables
 # before you include this module:
 #   CLANG_TIDY_DIRS, which is a CMake list of directories to include in clang-tidy analysis
-#     By default, the src and test directories are included
+#     By default, the src and tests directories are included
 #   CLANG_TIDY_FILETYPES, which is a CMake list of file types to include in clang-tidy analysis,
 #     specified as globs (e.g.: "*.c")
 #     By default, we analyze *.c, and *.cpp files
@@ -43,7 +43,7 @@ if(CLANG_TIDY)
 
   ### Supply argument defaults
   if(NOT CLANG_TIDY_DIRS)
-    set(CLANG_TIDY_DIRS src CACHE STRING "CMake list of directories to analyze with clang-tidy.")
+    set(CLANG_TIDY_DIRS src tests CACHE STRING "CMake list of directories to analyze with clang-tidy.")
   endif()
 
   if(NOT CLANG_TIDY_FILETYPES)
