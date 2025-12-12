@@ -13,19 +13,19 @@ void MainComponent::initialize_ui() noexcept {
   try {
     // Mode label (Tuner/Tone Generator)
     mode_label_.setText("Tuner Mode", juce::dontSendNotification);
-    mode_label_.setFont(juce::Font(24.0f, juce::Font::bold));
+    mode_label_.setFont(juce::FontOptions(24.0f, juce::Font::bold));
     mode_label_.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(mode_label_);
 
     // Note display
     note_label_.setText("--", juce::dontSendNotification);
-    note_label_.setFont(juce::Font(72.0f, juce::Font::bold));
+    note_label_.setFont(juce::FontOptions(72.0f, juce::Font::bold));
     note_label_.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(note_label_);
 
     // Frequency display
     frequency_label_.setText("0 Hz", juce::dontSendNotification);
-    frequency_label_.setFont(juce::Font(20.0f));
+    frequency_label_.setFont(juce::FontOptions(20.0f));
     frequency_label_.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(frequency_label_);
   } catch (...) {
@@ -43,7 +43,7 @@ void MainComponent::paint(juce::Graphics& g) {
 
     // Draw title text
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(28.0f, juce::Font::bold));
+    g.setFont(juce::FontOptions(28.0f, juce::Font::bold));
     g.drawText("SimpleTuner", 0, 0, getWidth(), 60,
                juce::Justification::centred);
   } catch (...) {
