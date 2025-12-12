@@ -1,6 +1,8 @@
 #ifndef SIMPLE_TUNER_INTERFACES_IPERMISSIONS_H_
 #define SIMPLE_TUNER_INTERFACES_IPERMISSIONS_H_
 
+#include <functional>
+
 namespace simple_tuner {
 
 enum class PermissionStatus { kNotDetermined, kGranted, kDenied, kRestricted };
@@ -11,7 +13,7 @@ class IPermissions {
 
   virtual PermissionStatus get_microphone_status() const noexcept = 0;
   virtual void request_microphone_permission(
-      void (*callback)(PermissionStatus)) noexcept = 0;
+      std::function<void(PermissionStatus)> callback) noexcept = 0;
 };
 
 }  // namespace simple_tuner

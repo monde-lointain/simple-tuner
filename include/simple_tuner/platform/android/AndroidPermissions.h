@@ -12,7 +12,7 @@ class AndroidPermissions : public IPermissions {
 
   PermissionStatus get_microphone_status() const noexcept override;
   void request_microphone_permission(
-      void (*callback)(PermissionStatus)) noexcept override;
+      std::function<void(PermissionStatus)> callback) noexcept override;
 
   AndroidPermissions(const AndroidPermissions&) = delete;
   AndroidPermissions& operator=(const AndroidPermissions&) = delete;

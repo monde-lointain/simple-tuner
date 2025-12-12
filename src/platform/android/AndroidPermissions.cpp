@@ -24,21 +24,21 @@ PermissionStatus AndroidPermissions::get_microphone_status() const noexcept {
 }
 
 void AndroidPermissions::request_microphone_permission(
-    void (*callback)(PermissionStatus)) noexcept {
+    std::function<void(PermissionStatus)> callback) noexcept {
   try {
     juce::RuntimePermissions::request(
         juce::RuntimePermissions::recordAudio, [callback](bool granted) {
           PermissionStatus status =
               granted ? PermissionStatus::kGranted : PermissionStatus::kDenied;
 
-          if (callback != nullptr) {
+          if (callback) {
             // Dispatch to main thread using JUCE
             juce::MessageManager::callAsync(
                 [callback, status]() { callback(status); });
           }
         });
   } catch (...) {
-    if (callback != nullptr) {
+    if (callback) {
       try {
         juce::MessageManager::callAsync(
             [callback]() { callback(PermissionStatus::kDenied); });

@@ -13,11 +13,6 @@ class MainComponent : public juce::Component {
   void paint(juce::Graphics& g) override;
   void resized() override;
 
-  MainComponent(const MainComponent&) = delete;
-  MainComponent& operator=(const MainComponent&) = delete;
-  MainComponent(MainComponent&&) = delete;
-  MainComponent& operator=(MainComponent&&) = delete;
-
  private:
   juce::Label mode_label_;
   juce::Label note_label_;

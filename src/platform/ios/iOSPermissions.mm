@@ -33,14 +33,14 @@ PermissionStatus iOSPermissions::get_microphone_status() const noexcept {
 }
 
 void iOSPermissions::request_microphone_permission(
-    void (*callback)(PermissionStatus)) noexcept {
+    std::function<void(PermissionStatus)> callback) noexcept {
   @try {
     [[AVAudioSession sharedInstance]
         requestRecordPermission:^(BOOL granted) {
       PermissionStatus status = granted ? PermissionStatus::kGranted
                                         : PermissionStatus::kDenied;
 
-      if (callback != nullptr) {
+      if (callback) {
         // Dispatch to main thread using JUCE
         juce::MessageManager::callAsync([callback, status]() {
           callback(status);
@@ -49,13 +49,13 @@ void iOSPermissions::request_microphone_permission(
     }];
   } @catch (NSException* exception) {
     NSLog(@"Exception in request_microphone_permission: %@", exception);
-    if (callback != nullptr) {
+    if (callback) {
       juce::MessageManager::callAsync([callback]() {
         callback(PermissionStatus::kDenied);
       });
     }
   } catch (...) {
-    if (callback != nullptr) {
+    if (callback) {
       try {
         juce::MessageManager::callAsync([callback]() {
           callback(PermissionStatus::kDenied);

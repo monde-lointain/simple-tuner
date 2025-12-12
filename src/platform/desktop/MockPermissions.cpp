@@ -7,8 +7,8 @@ PermissionStatus MockPermissions::get_microphone_status() const noexcept {
 }
 
 void MockPermissions::request_microphone_permission(
-    void (*callback)(PermissionStatus)) noexcept {
-  if (callback != nullptr) {
+    std::function<void(PermissionStatus)> callback) noexcept {
+  if (callback) {
     callback(PermissionStatus::kGranted);
   }
 }
