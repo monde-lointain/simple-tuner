@@ -19,6 +19,20 @@ bool AudioManager::initialize() noexcept {
       return false;
     }
 
+    // Configure for low latency
+    juce::AudioDeviceManager::AudioDeviceSetup setup;
+    device_manager_->getAudioDeviceSetup(setup);
+    setup.inputChannels.setRange(0, 1, true);   // Mono input
+    setup.outputChannels.setRange(0, 2, true);  // Stereo output
+    setup.bufferSize = 256;                     // Low latency buffer
+    setup.sampleRate = 0;                       // Auto-detect (44.1/48kHz)
+
+    error = device_manager_->setAudioDeviceSetup(setup, true);
+    if (error.isNotEmpty()) {
+      DBG("AudioManager setup failed: " << error);
+      return false;
+    }
+
     device_manager_->addAudioCallback(this);
     return true;
   } catch (...) {
@@ -75,6 +89,34 @@ int AudioManager::get_buffer_size() const noexcept {
   return buffer_size_.load();
 }
 
+bool AudioManager::is_initialized() const noexcept {
+  try {
+    return device_manager_ != nullptr &&
+           device_manager_->getCurrentAudioDevice() != nullptr;
+  } catch (...) {
+    return false;
+  }
+}
+
+int AudioManager::get_input_channels() const noexcept {
+  try {
+    auto* device = device_manager_->getCurrentAudioDevice();
+    return device ? device->getActiveInputChannels().countNumberOfSetBits() : 0;
+  } catch (...) {
+    return 0;
+  }
+}
+
+int AudioManager::get_output_channels() const noexcept {
+  try {
+    auto* device = device_manager_->getCurrentAudioDevice();
+    return device ? device->getActiveOutputChannels().countNumberOfSetBits()
+                  : 0;
+  } catch (...) {
+    return 0;
+  }
+}
+
 void AudioManager::audioDeviceIOCallbackWithContext(
     const float* const* input_channel_data, int num_input_channels,
     float* const* output_channel_data, int num_output_channels, int num_samples,
@@ -82,28 +124,29 @@ void AudioManager::audioDeviceIOCallbackWithContext(
   (void)context;
 
   try {
-    // Handle input
+    // Handle input - Placeholder for pitch detection
     if (input_handler_ && num_input_channels > 0 &&
         input_channel_data != nullptr) {
+      // TODO(Week 3): Process input through pitch detector
       input_handler_(input_channel_data[0], num_samples);
     }
 
-    // Handle output
+    // Handle output - Placeholder for tone generation
     if (output_handler_ && num_output_channels > 0 &&
         output_channel_data != nullptr) {
+      // TODO(Week 3): Generate reference tone for tuner mode
       output_handler_(output_channel_data[0], num_samples);
       // Copy to second channel if stereo
       if (num_output_channels > 1) {
-        for (int i = 0; i < num_samples; ++i) {
-          output_channel_data[1][i] = output_channel_data[0][i];
-        }
+        std::memcpy(output_channel_data[1], output_channel_data[0],
+                    static_cast<size_t>(num_samples) * sizeof(float));
       }
     } else {
       // Clear output buffers if no handler
       for (int ch = 0; ch < num_output_channels; ++ch) {
         if (output_channel_data[ch] != nullptr) {
-          juce::FloatVectorOperations::clear(output_channel_data[ch],
-                                             num_samples);
+          std::memset(output_channel_data[ch], 0,
+                      static_cast<size_t>(num_samples) * sizeof(float));
         }
       }
     }
@@ -112,8 +155,8 @@ void AudioManager::audioDeviceIOCallbackWithContext(
     for (int ch = 0; ch < num_output_channels; ++ch) {
       if (output_channel_data != nullptr &&
           output_channel_data[ch] != nullptr) {
-        juce::FloatVectorOperations::clear(output_channel_data[ch],
-                                           num_samples);
+        std::memset(output_channel_data[ch], 0,
+                    static_cast<size_t>(num_samples) * sizeof(float));
       }
     }
   }

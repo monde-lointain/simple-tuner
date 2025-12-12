@@ -39,6 +39,11 @@
               file="src/platform/android/AndroidPermissions.cpp"/>
       </GROUP>
     </GROUP>
+    <GROUP id="{E5F6A7B8-C9D0-E1F2-A3B4-C5D6E7F8A9B0}" name="ui">
+      <FILE id="uiMC01" name="MainComponent.cpp" compile="1" resource="0"
+            file="src/ui/MainComponent.cpp"/>
+    </GROUP>
+    <FILE id="main01" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

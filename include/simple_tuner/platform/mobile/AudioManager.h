@@ -23,6 +23,9 @@ class AudioManager : public juce::AudioIODeviceCallback {
 
   double get_sample_rate() const noexcept;
   int get_buffer_size() const noexcept;
+  bool is_initialized() const noexcept;
+  int get_input_channels() const noexcept;
+  int get_output_channels() const noexcept;
 
   void audioDeviceIOCallbackWithContext(
       const float* const* input_channel_data, int num_input_channels,
