@@ -59,7 +59,8 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
     <ANDROIDSTUDIO targetFolder="JUCEBuilds/Android" androidMinimumSDK="26" androidCustomAppBuildGradleContent=""
-                   androidCustomManifestContent="&lt;uses-permission android:name=&quot;android.permission.RECORD_AUDIO&quot;/&gt;">
+                   androidCustomManifestContent="&lt;uses-permission android:name=&quot;android.permission.RECORD_AUDIO&quot;/&gt;"
+                   microphonePermissionNeeded="1">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="SimpleTuner"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="SimpleTuner"/>

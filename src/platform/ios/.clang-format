@@ -1,10 +1,7 @@
-BasedOnStyle: Google
-Language: Cpp
-Standard: c++17
+BasedOnStyle: Apple
+Language: ObjC
 ColumnLimit: 80
 PointerAlignment: Left
-ReferenceAlignment: Left
-NamespaceIndentation: None
 BreakBeforeBraces: Attach
 SortIncludes: CaseInsensitive
 IncludeBlocks: Regroup
@@ -17,3 +14,10 @@ IncludeCategories:
     Priority:        3
   - Regex:           '.*'
     Priority:        4
+
+ObjCBlockIndentWidth: 2
+ObjCPropertyIndentation: 2
+ObjCSpaceAfterProperty: true
+ObjCBinPackProtocolList: Auto
+AllowShortFunctionsOnASingleLine: None
+AlignAfterOpenBracket: Align
