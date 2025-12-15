@@ -16,6 +16,7 @@ add_executable(simple_tuner_tests
   test_main.cpp
   test_frequency_calculator.cpp
   test_config_manager.cpp
+  test_audio_callbacks.cpp
 )
 
 target_link_libraries(simple_tuner_tests
