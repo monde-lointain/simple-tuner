@@ -1,15 +1,24 @@
 #ifndef SIMPLE_TUNER_UI_MAIN_COMPONENT_H_
 #define SIMPLE_TUNER_UI_MAIN_COMPONENT_H_
 
+#include <memory>
+
 #include <juce_gui_basics/juce_gui_basics.h>
+
+#include "simple_tuner/ui/ModeSelector.h" 
 
 namespace simple_tuner {
 
 class PitchDetectionController;
 class FrequencyCalculator;
+class NoteDisplayComponent;
+class TuningMeterComponent;
+class StatusIndicatorComponent;
 
 class MainComponent : public juce::Component, private juce::Timer {
  public:
+  enum class AppMode { kMeter, kSound };
+
   MainComponent();
   ~MainComponent() override;
 
@@ -20,16 +29,26 @@ class MainComponent : public juce::Component, private juce::Timer {
   void set_pitch_controller(PitchDetectionController* controller) noexcept;
 
  private:
-  juce::Label mode_label_;
-  juce::Label note_label_;
-  juce::Label frequency_label_;
+  // UI Components
+  std::unique_ptr<NoteDisplayComponent> note_display_;
+  std::unique_ptr<TuningMeterComponent> tuning_meter_;
+  std::unique_ptr<StatusIndicatorComponent> status_indicator_;
+  std::unique_ptr<ModeSelector> mode_selector_;
+  std::unique_ptr<juce::DrawableButton> settings_button_;
+  juce::Label cent_value_label_;
 
+  // Controllers and calculators
   PitchDetectionController* pitch_controller_;
   std::unique_ptr<FrequencyCalculator> frequency_calculator_;
 
+  // State
+  AppMode current_mode_;
+
+  // Helpers
   void initialize_ui() noexcept;
   void timerCallback() override;
-  void update_display(double frequency) noexcept;
+  void handle_mode_change(ModeSelector::Mode mode) noexcept;
+  juce::String format_cents(double cents) const noexcept;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

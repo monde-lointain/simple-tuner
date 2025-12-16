@@ -46,6 +46,14 @@
     <GROUP id="{E5F6A7B8-C9D0-E1F2-A3B4-C5D6E7F8A9B0}" name="ui">
       <FILE id="uiMC01" name="MainComponent.cpp" compile="1" resource="0"
             file="src/ui/MainComponent.cpp"/>
+      <FILE id="uiND01" name="NoteDisplayComponent.cpp" compile="1" resource="0"
+            file="src/ui/NoteDisplayComponent.cpp"/>
+      <FILE id="uiTM01" name="TuningMeterComponent.cpp" compile="1" resource="0"
+            file="src/ui/TuningMeterComponent.cpp"/>
+      <FILE id="uiSI01" name="StatusIndicatorComponent.cpp" compile="1" resource="0"
+            file="src/ui/StatusIndicatorComponent.cpp"/>
+      <FILE id="uiMS01" name="ModeSelector.cpp" compile="1" resource="0"
+            file="src/ui/ModeSelector.cpp"/>
     </GROUP>
     <FILE id="main01" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
   </MAINGROUP>

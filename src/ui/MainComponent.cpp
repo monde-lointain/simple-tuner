@@ -5,12 +5,18 @@
 
 #include "simple_tuner/algorithms/FrequencyCalculator.h"
 #include "simple_tuner/controllers/PitchDetectionController.h"
+#include "simple_tuner/ui/ModeSelector.h"
+#include "simple_tuner/ui/NoteDisplayComponent.h"
+#include "simple_tuner/ui/StatusIndicatorComponent.h"
+#include "simple_tuner/ui/TuningMeterComponent.h"
+#include "simple_tuner/ui/UIConstants.h"
 
 namespace simple_tuner {
 
 MainComponent::MainComponent()
     : pitch_controller_(nullptr),
-      frequency_calculator_(std::make_unique<FrequencyCalculator>()) {
+      frequency_calculator_(std::make_unique<FrequencyCalculator>()),
+      current_mode_(AppMode::kMeter) {
   initialize_ui();
   setSize(400, 600);
   startTimerHz(60);  // 60 FPS update rate for lower latency
@@ -20,23 +26,37 @@ MainComponent::~MainComponent() { stopTimer(); }
 
 void MainComponent::initialize_ui() noexcept {
   try {
-    // Mode label (Tuner/Tone Generator)
-    mode_label_.setText("Tuner Mode", juce::dontSendNotification);
-    mode_label_.setFont(juce::FontOptions(24.0f, juce::Font::bold));
-    mode_label_.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(mode_label_);
+    // Create note display component
+    note_display_ = std::make_unique<NoteDisplayComponent>();
+    addAndMakeVisible(note_display_.get());
 
-    // Note display
-    note_label_.setText("--", juce::dontSendNotification);
-    note_label_.setFont(juce::FontOptions(72.0f, juce::Font::bold));
-    note_label_.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(note_label_);
+    // Create tuning meter component (placeholder for Week 1)
+    tuning_meter_ = std::make_unique<TuningMeterComponent>();
+    addAndMakeVisible(tuning_meter_.get());
 
-    // Frequency display
-    frequency_label_.setText("0 Hz", juce::dontSendNotification);
-    frequency_label_.setFont(juce::FontOptions(20.0f));
-    frequency_label_.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(frequency_label_);
+    // Create status indicator component
+    status_indicator_ = std::make_unique<StatusIndicatorComponent>();
+    addAndMakeVisible(status_indicator_.get());
+
+    // Create mode selector
+    mode_selector_ = std::make_unique<ModeSelector>();
+    mode_selector_->on_mode_changed = [this](ModeSelector::Mode mode) {
+      handle_mode_change(mode);
+    };
+    addAndMakeVisible(mode_selector_.get());
+
+    // Create settings button (placeholder - no icon for Week 1)
+    settings_button_ = std::make_unique<juce::DrawableButton>(
+        "Settings", juce::DrawableButton::ImageOnButtonBackground);
+    addAndMakeVisible(settings_button_.get());
+
+    // Create cent value label
+    cent_value_label_.setText("--", juce::dontSendNotification);
+    cent_value_label_.setFont(juce::FontOptions(24.0f, juce::Font::bold));
+    cent_value_label_.setJustificationType(juce::Justification::centred);
+    cent_value_label_.setColour(juce::Label::textColourId, ui::kTextNeutral);
+    addAndMakeVisible(cent_value_label_);
+
   } catch (...) {
     DBG("Exception in MainComponent::initialize_ui()");
   }
@@ -44,17 +64,7 @@ void MainComponent::initialize_ui() noexcept {
 
 void MainComponent::paint(juce::Graphics& g) {
   try {
-    g.fillAll(juce::Colours::darkgrey);
-
-    // Draw title bar background
-    g.setColour(juce::Colours::black);
-    g.fillRect(0, 0, getWidth(), 60);
-
-    // Draw title text
-    g.setColour(juce::Colours::white);
-    g.setFont(juce::FontOptions(28.0f, juce::Font::bold));
-    g.drawText("SimpleTuner", 0, 0, getWidth(), 60,
-               juce::Justification::centred);
+    g.fillAll(ui::kBackgroundDark);
   } catch (...) {
     // Suppress paint exceptions
   }
@@ -64,20 +74,44 @@ void MainComponent::resized() {
   try {
     auto bounds = getLocalBounds();
 
-    // Reserve top 60px for title bar
-    bounds.removeFromTop(60);
-    bounds.reduce(20, 20);
+    // Query safe area insets for notches (desktop will return 0)
+    juce::BorderSize<int> safe_insets;
+    if (auto* display =
+            juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()) {
+      safe_insets = display->safeAreaInsets;
+    }
+    bounds = safe_insets.subtractedFrom(bounds);
 
-    // Mode label at top
-    mode_label_.setBounds(bounds.removeFromTop(40));
-    bounds.removeFromTop(40);  // Spacing
+    // Settings button: top-right, 44x44pt
+    auto settings_area = bounds.removeFromTop(ui::kMinTouchTargetSize);
+    settings_button_->setBounds(
+        settings_area.removeFromRight(ui::kMinTouchTargetSize));
 
-    // Note display in center
-    note_label_.setBounds(bounds.removeFromTop(120));
-    bounds.removeFromTop(20);  // Spacing
+    // Top Zone: Note Display (20% height)
+    int note_display_height =
+        static_cast<int>(getHeight() * ui::kNoteDisplayHeightRatio);
+    note_display_->setBounds(bounds.removeFromTop(note_display_height));
 
-    // Frequency display below note
-    frequency_label_.setBounds(bounds.removeFromTop(40));
+    // Bottom Zone: Controls (15% height)
+    int controls_height =
+        static_cast<int>(getHeight() * ui::kControlsHeightRatio);
+    auto bottom = bounds.removeFromBottom(controls_height);
+    mode_selector_->setBounds(
+        bottom.removeFromTop(ui::kMinTouchTargetSize).reduced(40, 0));
+
+    // Center Zone: Meter + Cent Value + Status
+    int cent_value_height =
+        static_cast<int>(getHeight() * ui::kCentValueHeightRatio);
+    int status_height = 40;
+
+    tuning_meter_->setBounds(
+        bounds.removeFromTop(bounds.getHeight() - cent_value_height -
+                             status_height - 20));  // 20px spacing
+    bounds.removeFromTop(10);                       // Spacing
+    cent_value_label_.setBounds(bounds.removeFromTop(cent_value_height));
+    bounds.removeFromTop(10);  // Spacing
+    status_indicator_->setBounds(bounds.removeFromTop(status_height));
+
   } catch (...) {
     DBG("Exception in MainComponent::resized()");
   }
@@ -97,32 +131,54 @@ void MainComponent::timerCallback() {
   double confidence = 0.0;
 
   if (pitch_controller_->get_latest_result(frequency, confidence)) {
-    update_display(frequency);
+    // Valid pitch detected
+    int midi_note = frequency_calculator_->frequency_to_midi(frequency);
+    double cents = frequency_calculator_->calculate_cents(frequency, midi_note);
+
+    // Update all components
+    note_display_->update_note_with_cents(midi_note, confidence,
+                                          static_cast<float>(cents));
+    tuning_meter_->update_needle_position(static_cast<float>(cents));
+    cent_value_label_.setText(format_cents(cents), juce::dontSendNotification);
+    status_indicator_->update_status(static_cast<float>(cents));
+
+    // Update cent label color based on in-tune status
+    juce::Colour cent_color = (std::abs(cents) <= ui::kInTuneThreshold)
+                                  ? ui::kTextInTune
+                                  : ui::kTextNeutral;
+    cent_value_label_.setColour(juce::Label::textColourId, cent_color);
+
   } else {
-    // No valid pitch detected
-    note_label_.setText("--", juce::dontSendNotification);
-    frequency_label_.setText("0.00 Hz", juce::dontSendNotification);
+    // No valid pitch detected - set all to "no signal" state
+    note_display_->set_no_signal();
+    tuning_meter_->set_no_signal();
+    cent_value_label_.setText("--", juce::dontSendNotification);
+    cent_value_label_.setColour(juce::Label::textColourId, ui::kTextInactive);
+    status_indicator_->set_no_signal();
   }
 }
 
-void MainComponent::update_display(double frequency) noexcept {
+void MainComponent::handle_mode_change(ModeSelector::Mode mode) noexcept {
+  // Update internal app mode state
+  if (mode == ModeSelector::Mode::kMeter) {
+    current_mode_ = AppMode::kMeter;
+  } else {
+    current_mode_ = AppMode::kSound;
+  }
+
+  // Phase 3: Visual-only change (Sound mode not implemented yet)
+  DBG("Mode changed to: " +
+      juce::String(current_mode_ == AppMode::kMeter ? "Meter" : "Sound"));
+}
+
+juce::String MainComponent::format_cents(double cents) const noexcept {
   try {
-    // Convert frequency to MIDI note
-    int midi_note = frequency_calculator_->frequency_to_midi(frequency);
-    std::string note_name = frequency_calculator_->midi_to_note_name(midi_note);
-    int octave = frequency_calculator_->midi_to_octave(midi_note);
-
-    // Format note display (e.g., "A4")
-    std::ostringstream note_stream;
-    note_stream << note_name << octave;
-    note_label_.setText(note_stream.str(), juce::dontSendNotification);
-
-    // Format frequency display (e.g., "440.00 Hz")
-    std::ostringstream freq_stream;
-    freq_stream << std::fixed << std::setprecision(2) << frequency << " Hz";
-    frequency_label_.setText(freq_stream.str(), juce::dontSendNotification);
+    std::ostringstream stream;
+    stream << std::showpos << std::fixed << std::setprecision(1) << cents
+           << " cents";
+    return stream.str();
   } catch (...) {
-    DBG("Exception in MainComponent::update_display()");
+    return "--";
   }
 }
 
