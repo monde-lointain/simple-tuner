@@ -45,9 +45,15 @@ void MainComponent::initialize_ui() noexcept {
     };
     addAndMakeVisible(mode_selector_.get());
 
-    // Create settings button (placeholder - no icon for Week 1)
+    // Create settings button
     settings_button_ = std::make_unique<juce::DrawableButton>(
         "Settings", juce::DrawableButton::ImageOnButtonBackground);
+    settings_button_->setButtonText("⚙");
+    settings_button_->onClick = [this]() {
+      juce::AlertWindow::showMessageBoxAsync(
+          juce::AlertWindow::InfoIcon, "Settings",
+          "Settings screen coming in Phase 6", "OK");
+    };
     addAndMakeVisible(settings_button_.get());
 
     // Create cent value label
@@ -87,30 +93,64 @@ void MainComponent::resized() {
     settings_button_->setBounds(
         settings_area.removeFromRight(ui::kMinTouchTargetSize));
 
-    // Top Zone: Note Display (20% height)
-    int note_display_height =
-        static_cast<int>(getHeight() * ui::kNoteDisplayHeightRatio);
-    note_display_->setBounds(bounds.removeFromTop(note_display_height));
+    // Detect orientation
+    bool is_landscape = getWidth() > getHeight();
 
-    // Bottom Zone: Controls (15% height)
-    int controls_height =
-        static_cast<int>(getHeight() * ui::kControlsHeightRatio);
-    auto bottom = bounds.removeFromBottom(controls_height);
-    mode_selector_->setBounds(
-        bottom.removeFromTop(ui::kMinTouchTargetSize).reduced(40, 0));
+    if (is_landscape) {
+      // Landscape layout (existing)
+      // Top Zone: Note Display (20% height)
+      int note_display_height =
+          static_cast<int>(getHeight() * ui::kNoteDisplayHeightRatio);
+      note_display_->setBounds(bounds.removeFromTop(note_display_height));
 
-    // Center Zone: Meter + Cent Value + Status
-    int cent_value_height =
-        static_cast<int>(getHeight() * ui::kCentValueHeightRatio);
-    int status_height = 40;
+      // Bottom Zone: Controls (15% height)
+      int controls_height =
+          static_cast<int>(getHeight() * ui::kControlsHeightRatio);
+      auto bottom = bounds.removeFromBottom(controls_height);
+      mode_selector_->setBounds(
+          bottom.removeFromTop(ui::kMinTouchTargetSize).reduced(40, 0));
 
-    tuning_meter_->setBounds(
-        bounds.removeFromTop(bounds.getHeight() - cent_value_height -
-                             status_height - 20));  // 20px spacing
-    bounds.removeFromTop(10);                       // Spacing
-    cent_value_label_.setBounds(bounds.removeFromTop(cent_value_height));
-    bounds.removeFromTop(10);  // Spacing
-    status_indicator_->setBounds(bounds.removeFromTop(status_height));
+      // Center Zone: Meter + Cent Value + Status
+      int cent_value_height =
+          static_cast<int>(getHeight() * ui::kCentValueHeightRatio);
+      int status_height = 40;
+
+      tuning_meter_->setBounds(
+          bounds.removeFromTop(bounds.getHeight() - cent_value_height -
+                               status_height - 20));  // 20px spacing
+      bounds.removeFromTop(10);                       // Spacing
+      cent_value_label_.setBounds(bounds.removeFromTop(cent_value_height));
+      bounds.removeFromTop(10);  // Spacing
+      status_indicator_->setBounds(bounds.removeFromTop(status_height));
+
+    } else {
+      // Portrait layout (new)
+      // Top Zone: Note Display (15% height - smaller in portrait)
+      constexpr float kPortraitNoteDisplayRatio = 0.15f;
+      int note_display_height =
+          static_cast<int>(getHeight() * kPortraitNoteDisplayRatio);
+      note_display_->setBounds(bounds.removeFromTop(note_display_height));
+
+      // Center Zone: Meter (40% height)
+      constexpr float kPortraitMeterRatio = 0.40f;
+      int meter_height = static_cast<int>(getHeight() * kPortraitMeterRatio);
+      tuning_meter_->setBounds(bounds.removeFromTop(meter_height));
+
+      // Cent value + status below meter
+      int cent_value_height =
+          static_cast<int>(getHeight() * ui::kCentValueHeightRatio);
+      int status_height = 40;
+
+      bounds.removeFromTop(10);  // Spacing
+      cent_value_label_.setBounds(bounds.removeFromTop(cent_value_height));
+      bounds.removeFromTop(10);  // Spacing
+      status_indicator_->setBounds(bounds.removeFromTop(status_height));
+
+      // Bottom Zone: Controls (stacked horizontally)
+      bounds.removeFromTop(10);  // Spacing
+      mode_selector_->setBounds(
+          bounds.removeFromTop(ui::kMinTouchTargetSize).reduced(40, 0));
+    }
 
   } catch (...) {
     DBG("Exception in MainComponent::resized()");

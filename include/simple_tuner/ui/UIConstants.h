@@ -29,11 +29,12 @@ constexpr int kMinTouchTargetSize = 44;  // Minimum 44pt for accessibility
 constexpr float kDampingCoefficient = 0.80f;  // Needle damping: balanced
 
 // Meter Geometry
-constexpr float kMeterArcSpan = 150.0f;     // Arc span in degrees
-constexpr float kMeterRadiusRatio = 0.40f;  // Radius as % of width
-constexpr int kTickMarkInterval = 10;       // Tick marks every 10 cents
-constexpr int kMeterRange = 20;             // ±20 cents display range
-constexpr float kNeedleThickness = 2.0f;    // Needle line width
+constexpr float kMeterArcSpan = 150.0f;  // Arc span in degrees
+constexpr float kMeterRadiusRatio =
+    .60f;                                // Radius as % of width (90% diameter)
+constexpr int kTickMarkInterval = 10;     // Tick marks every 10 cents
+constexpr int kMeterRange = 20;           // ±20 cents display range
+constexpr float kNeedleThickness = 2.0f;  // Needle line width
 
 // Pure Interval Markers (cents deviation from equal temperament)
 constexpr float kPureMajorThirdCents = -13.7f;  // Major 3rd pure intonation
