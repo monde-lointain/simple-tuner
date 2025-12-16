@@ -40,6 +40,19 @@ The JUCE framework provides cross-platform audio capabilities suitable for devel
 
 To provide musicians worldwide with a reliable, accurate, and simple chromatic tuner that works flawlessly offline on mobile devices, eliminating barriers to proper instrument tuning regardless of skill level, location, or network availability.
 
+### 1.5.1 Design Philosophy
+
+SimpleTuner adopts a **measurement instrument on glass** metaphor. The application is designed as a professional tuning instrument—not a consumer lifestyle product. Key design principles:
+
+- **Precision over decoration:** Visual hierarchy favors accuracy and clarity, not aesthetics for their own sake
+- **Minimal, intentional interaction:** All controls are deliberate and visible; no hidden gestures or playful animations
+- **Restrained feedback:** Visual, motion, and haptic feedback are informational, communicating measurement data—never expressive or attention-seeking
+- **Dark, calm environment:** Charcoal/near-black background reduces eye fatigue and lets indicators stand out
+- **Immediate trust:** The user understands the interface without exploration or learning; it behaves like a measurement instrument
+- **No physical representation:** The entire phone screen is the interface; there is no virtual enclosure or skeuomorphism
+
+This philosophical foundation informs all UI/UX requirements throughout Phases 3-7 of implementation.
+
 ### 1.6 Business Risks
 
 **RI-1:** **MEDIUM** - Microphone hardware variability across Android devices may affect pitch detection consistency and require extensive device-specific testing.
@@ -88,13 +101,15 @@ To provide musicians worldwide with a reliable, accurate, and simple chromatic t
 - Pure interval reference marks at -13.7 cents (pure major third) and +15.6 cents (pure minor third)
 - 12-note equal temperament tuning system
 - Detection accuracy: ±1 cent
+- **UI/UX:** Dark matte background, large note display, thin arc meter with smooth damped needle, restrained green in-tune indication, no decoration or expressive feedback
 
 **MF-2: Reference Tone Generation (Sound Mode)**
 - Toggle activation of continuous reference tone output
 - One-octave range: C4 (261.63 Hz) to C5 (523.25 Hz)
-- Note selection via touchscreen interface
+- Note selection via touchscreen interface (virtual keyboard or button grid)
 - Output accuracy: ±1.5 cents
 - Immediate playback with no latency
+- **UI/UX:** Clear note selection interface, prominent toggle button, consistent visual weight with Meter Mode, minimal iconography
 
 **MF-3: Configurable Reference Pitch**
 - A4 calibration adjustable from 410 Hz to 480 Hz
@@ -102,6 +117,7 @@ To provide musicians worldwide with a reliable, accurate, and simple chromatic t
 - Default setting: 440 Hz (standard concert pitch)
 - Persistent storage of user preference
 - Real-time recalibration of all note frequencies when adjusted
+- **UI/UX:** Discrete +/- steps or stepped slider, precise numerical display, haptic feedback per step for instrument-like feel
 
 **MF-4: Adaptive User Interface**
 - Touch-optimized controls for mobile interaction
@@ -109,6 +125,7 @@ To provide musicians worldwide with a reliable, accurate, and simple chromatic t
 - Automatic layout adjustment for different screen sizes and aspect ratios
 - Mode switching between Meter Mode and Sound Mode
 - Clear visual hierarchy emphasizing tuning information
+- **UI/UX:** Measurement instrument on glass metaphor, no physical enclosure representation, full-screen interface, intentional minimal interaction, no hidden controls, all core information visible at all times
 
 **MF-5: Offline Operation**
 - Zero network connectivity requirements for all functionality

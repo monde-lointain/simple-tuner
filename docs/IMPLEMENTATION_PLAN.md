@@ -343,6 +343,10 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Implement note name and cent value displays
 - Add status indicators (flat/center/sharp)
 - Connect UI to pitch detection
+- Implement design philosophy: **measurement instrument on glass**
+
+### Design Philosophy Integration
+All UI elements must embody the core design principle: a professional measurement instrument displayed on the phone screen with no physical enclosure representation. Interaction is deliberate and minimal; feedback is informational, never expressive. The dark background and restrained visual treatment should convey calm professionalism, encouraging immediate user trust without need for exploration.
 
 ### Implementation Steps
 
@@ -355,72 +359,117 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 
 **Mobile Implementation:**
 
-1. **Main Screen Layout**
-   - Design component hierarchy for Meter Mode screen
-   - Create `MeterModeComponent` extending Component
-   - Implement responsive layout using flexbox or manual positioning
-   - Define safe areas for iOS notch/Android system bars
-   - Test layout in portrait and landscape orientations
+1. **Layout Structure and Visual Foundation**
+   - Full-screen dark background: charcoal or near-black (not pure #000000), matte appearance
+   - No visible texture, noise, or strong gradients
+   - Divide screen into three zones (landscape primary, portrait secondary):
+     - **Top Zone:** Note name and status information
+     - **Center Zone:** Tuning meter (primary visual anchor)
+     - **Bottom Zone:** Controls and mode selector
+   - No scrolling; all core information visible at all times
+   - Create `MeterModeComponent` extending JUCE Component
 
-2. **Note Name Display**
-   - Create `NoteDisplayComponent` for large note text
-   - Implement dynamic font sizing (15%+ of screen height)
-   - Display note name (C, C#, D, etc.) with octave subscript
-   - Handle "no signal" state with placeholder ("—")
-   - Ensure high contrast for readability
+2. **Note Name Display (Top Zone)**
+   - Create `NoteDisplayComponent` for centered note name
+   - **Visual treatment:** Large, bold, sans-serif font (modern, technical character)
+   - **Font hierarchy:** Single letter dominant (e.g., A), accidentals (♯/♭) smaller and cleanly aligned
+   - **Dynamic sizing:** ≥15% of screen height for large visibility
+   - **Color behavior:**
+     - Neutral off-white when unstable or no signal
+     - Soft green when stably in tune (±5 cents threshold)
+   - **Supporting information below note:**
+     - Reference frequency (e.g., "440 Hz")
+     - Smaller text, low visual emphasis
+   - Handle "no signal" state with placeholder ("—" in neutral color)
 
-3. **Cent Value Display**
-   - Create numeric cent deviation label
-   - Format: sign + value + "cents" (e.g., "-12.3 cents")
-   - Font size: 8%+ of screen height
-   - Position adjacent to tuning meter
-   - Color coding optional (green when |cents| ≤ 5)
+3. **Tuning Meter Visualization (Center Zone)**
+   - Create `TuningMeterComponent` as the primary visual anchor
+   - **Meter design:**
+     - Wide arc or semi-circular meter spanning most screen width
+     - Arc angle: 120-180 degrees (aesthetic balance)
+     - Thin, precise tick marks at 10-cent intervals
+     - Center point clearly labeled as "0"
+     - Scale represents ±20 cents deviation (clamped display range)
+   - **Needle/Indicator:**
+     - Thin vertical line or narrow wedge shape
+     - Smooth, damped motion (coefficient 0.7-0.85)
+     - No bouncing or spring effects
+     - Updated continuously from pitch detection
+   - **Color behavior:**
+     - Neutral gray or off-white when away from center
+     - Subtle transition to restrained green near perfect tuning
+     - No flashing, pulsing, or attention-seeking animation
+   - **Colored zones:**
+     - Red/muted zone: far from center (flat or sharp)
+     - Green zone: ±5 cents (in tune)
+     - Zones integrated into meter arc, not overlaid
+   - **Pure interval reference marks:**
+     - Marker at -13.7 cents (pure major third)
+     - Marker at +15.6 cents (pure minor third)
+     - Distinct visual style (small triangle or dot)
+     - Visible but subtle; do not compete with main needle
 
-4. **Tuning Meter Visualization**
-   - Create `TuningMeterComponent` for analog-style meter
-   - Draw semicircular arc (120-180 degrees)
-   - Add cent scale markings at 10-cent intervals
-   - Draw animated needle indicating deviation
-   - Implement needle damping algorithm (coefficient 0.7-0.85)
-   - Add colored zones: red (flat), green (center), red (sharp)
+4. **Cent Value Numeric Display**
+   - Create adjacent to or below tuning meter
+   - **Format:** sign + value to 1 decimal place + "cents" (e.g., "-12.3 cents")
+   - **Font size:** ≥8% of screen height, clean sans-serif
+   - **Color:** Off-white (neutral); soft green when |cents| ≤ 5 (in-tune zone)
+   - Update synchronized with meter needle
 
-5. **Pure Interval Reference Marks**
-   - Add marker at -13.7 cents (pure major third)
-   - Add marker at +15.6 cents (pure minor third)
-   - Use distinct visual style (triangle or dot)
-   - Ensure marks visible against meter background
-
-6. **Status Indicators**
+5. **Status Indicators**
    - Create text labels: "FLAT", "IN TUNE", "SHARP"
-   - Position below meter or integrate with zones
-   - Highlight active status with color/boldness
-   - Update based on cent deviation thresholds (±5 cents)
+   - Position below or integrated with meter zones
+   - Highlight active status with boldness/emphasis
+   - Update based on cent deviation thresholds (±5 cents = "IN TUNE")
+   - Color aligned with meter zone colors
 
-7. **UI Update Mechanism**
+6. **Mode Selector Control (Bottom Zone)**
+   - Create segmented control or tab-like interface: "Meter" | "Sound"
+   - Position at bottom or top of screen, consistent layout in both orientations
+   - Highlight active mode with contrast
+   - Handle tap events to switch modes
+   - **Interaction:** Tap-based only, no gestures
+   - **Visual treatment:** Flat, minimal iconography; same visual weight as other controls
+   - Minimum touch target size: 44×44 pt (iOS) / 48×48 dp (Android)
+   - Controls should feel like **instrument switches**, not app buttons
+
+7. **Settings Button**
+   - Add subtle label or gear icon button (top-right corner)
+   - Minimum size: 44×44 pt / 48×48 dp
+   - Flat, minimal icon style (no fill, outline only preferred)
+   - Same visual weight as mode selector
+   - Handle tap to navigate to settings screen
+   - Use platform-appropriate icon, but maintain consistency with design language
+
+8. **UI Update Mechanism**
    - Implement thread-safe communication from audio to UI thread
    - Use JUCE MessageManager for asynchronous updates
-   - Target 20+ Hz display refresh rate
+   - Target ≥20 Hz display refresh rate (50ms intervals)
    - Smooth meter needle animation using interpolation
    - Prevent UI updates from blocking audio thread
+   - No jank or stuttering during rapid updates
 
-8. **Mode Selector Control**
-   - Create segmented control or tabs: "Meter" | "Sound"
-   - Position at top of screen
-   - Highlight active mode
-   - Handle tap events to switch modes
-   - Minimum touch target size: 44×44 pt (iOS) / 48×48 dp (Android)
+9. **Visual Design Summary**
+   - **Color Palette:**
+     - Background: dark charcoal / near-black
+     - Primary text: off-white
+     - In-tune indication: restrained green (subtle, not neon)
+     - Inactive elements: muted gray
+   - **Typography:**
+     - Clean, modern sans-serif (neutral, technical character)
+     - Heavy weight: Note name
+     - Medium weight: Labels and status indicators
+     - Light weight: Reference frequency, secondary info
+   - **Contrast:** Ensure WCAG AA minimum (4.5:1) for readability
+   - **Motion:** Only used to convey measurement; physically believable meter movement
+   - **Feedback:** Subtle visual highlight on tap (opacity change, not ripple/splash effects)
+   - **No decoration:** No gradients, shadows, rounded corners, or expressive styling
 
-9. **Settings Button**
-   - Add gear icon button in top-right corner
-   - Minimum size: 44×44 pt / 48×48 dp
-   - Handle tap to navigate to settings screen
-   - Use platform-appropriate icon style
-
-10. **Visual Design and Theming**
-    - Define color palette (background, accent, status colors)
-    - Ensure WCAG AA contrast ratios (4.5:1 minimum)
-    - Follow iOS HIG / Android Material Design guidelines
-    - Test readability in varied lighting conditions
+10. **Safe Area Handling**
+    - Query safe area insets from platform
+    - Adjust layout to avoid notches, rounded corners, home indicators
+    - Ensure controls not obscured by system UI
+    - Test on notched devices (iPhone X+) and hole-punch cameras
 
 ### Deliverables
 - Complete Meter Mode UI components
@@ -585,6 +634,10 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Implement tone toggle control
 - Connect UI to tone generator
 - Complete mode switching
+- Maintain **measurement instrument on glass** design philosophy
+
+### Design Philosophy Integration
+Sound Mode must maintain the same minimal, professional aesthetic as Meter Mode. Controls should feel like instrument switches. The interface should present clear affordances for note selection without decoration or playful animations. All visual elements should communicate function, not personality.
 
 ### Implementation Steps
 
@@ -597,57 +650,107 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 
 **Mobile Implementation:**
 
-1. **Sound Mode Component**
+1. **Sound Mode Component Layout**
    - Create `SoundModeComponent` extending Component
-   - Implement layout for note selection and toggle
-   - Display current reference pitch at top
-   - Position toggle button prominently at bottom
+   - Maintain dark background consistent with Meter Mode
+   - Layout zones:
+     - **Top:** Reference pitch display (same style as Meter Mode header)
+     - **Middle:** Note selection interface (50% of screen area)
+     - **Bottom:** Tone toggle control (prominent action)
+     - **Mode selector:** Consistent position with Meter Mode
+   - No scrolling; all elements visible simultaneously
 
 2. **Note Selection Interface**
-   - Design virtual keyboard layout (white/black keys)
-   - OR: Create button grid (13 buttons for C4-C5)
-   - Ensure each selectable element ≥44×44 pt / 48×48 dp
-   - Implement visual highlighting of selected note
-   - Handle tap events to update selection
+   - **Design options (choose one):**
+     - Virtual keyboard: White/black key layout mirroring piano
+     - Button grid: 13 buttons arranged logically (C4-C5)
+   - **Appearance:**
+     - Clean, geometric key shapes without decoration
+     - No gradients, shadows, or 3D effects
+     - Keys labeled clearly with note names
+   - **Touch targets:**
+     - Each selectable element ≥44×44 pt / 48×48 dp
+     - Adequate spacing between keys to prevent mis-taps
+   - **Visual feedback:**
+     - Selected note highlighted with subtle color shift or border
+     - No ripple effects or splash animations
+     - Immediate visual response (opacity/color change on tap)
+   - **Virtual keyboard specific:**
+     - White keys: C, D, E, F, G, A, B, C (larger area)
+     - Black keys: C#, D#, F#, G#, A# (smaller, offset above white keys)
+     - Piano-like layout for intuitive mapping to musicians
+     - No skeuomorphic 3D effects; flat design with clear outlines
+   - **Button grid specific (alternative):**
+     - 13 buttons in row or 2-row grid layout
+     - Clear labeling for each note
+     - Consistent sizing and spacing
 
-3. **Virtual Keyboard Visual Design**
-   - White keys: C, D, E, F, G, A, B, C (larger)
-   - Black keys: C#, D#, F#, G#, A# (smaller, offset)
-   - Label each key with note name
-   - Use piano-like styling for intuitive mapping
-   - Add touch feedback (ripple/highlight)
+3. **Reference Pitch Display (Top Zone)**
+   - Display current A4 reference frequency (e.g., "440 Hz")
+   - Same font and color treatment as Meter Mode reference frequency
+   - Position top-center or top-left
+   - Update dynamically when reference pitch changes in settings
 
-4. **Tone Toggle Control**
-   - Create large button: "Play Tone" / "Stop Tone"
-   - Minimum size: 60×60 dp (prominent action)
-   - Inactive state: neutral color, play icon
-   - Active state: accent color, stop icon
-   - Handle tap events to toggle tone state
+4. **Tone Toggle Control (Bottom Zone)**
+   - Create large button for tone activation/deactivation
+   - **Button states:**
+     - Inactive: neutral gray/off-white color, play icon (or simple label "Play")
+     - Active: distinct but restrained color, stop icon (or label "Stop")
+   - **Minimum size:** 60×60 dp (prominent action, largest control on screen)
+   - **Visual treatment:** Flat, minimal icon style; outline icon preferred over filled
+   - **Interaction:**
+     - Single tap to toggle state
+     - Tap-based only; no long-press or gesture behaviors
+   - **Visual feedback:**
+     - Subtle opacity change or color shift on press
+     - No animation or bounce effects
+     - Immediate state change indication
+   - **Placement:** Centered at bottom of screen, with adequate margin from screen edge
 
 5. **Toggle State Management**
-   - Maintain boolean state: toneActive
-   - Update button visual on state change
-   - Communicate state to AudioProcessor
-   - Ensure thread-safe state updates
+   - Maintain boolean state: `toneActive`
+   - Update button visual immediately on state change
+   - Communicate state to AudioProcessor via thread-safe mechanism
+   - Prevent UI blocking from audio thread updates
 
 6. **Mode Switching Logic**
    - Implement mode enum: METER / SOUND
    - Handle mode selector tap events
-   - Show/hide appropriate component based on mode
-   - Stop tone when switching to Meter Mode
-   - Start pitch detection when switching to Meter Mode
+   - Show/hide appropriate component based on mode (mutually exclusive)
+   - **When switching from Sound to Meter:**
+     - Stop tone automatically
+     - Start pitch detection
+     - Clear any pending audio state
+   - **When switching from Meter to Sound:**
+     - Stop pitch detection
+     - Maintain previous note selection (if possible)
+     - Preserve reference pitch value
 
 7. **UI to Audio Connection**
    - Pass selected note to ToneGenerator
    - Pass toggle state to AudioProcessor
    - Handle reference pitch changes from settings
    - Update displayed reference pitch value
+   - Ensure thread-safe state updates
 
-8. **Visual Hierarchy**
-   - Note selection: largest screen area (50%)
-   - Tone toggle: prominent bottom placement
-   - Reference pitch display: secondary, top-center
-   - Mode selector: consistent with Meter Mode
+8. **Visual Hierarchy and Design Consistency**
+   - **Screen area allocation:**
+     - Note selection: 50% of screen (primary interaction)
+     - Tone toggle: 20% of screen (prominent action)
+     - Reference pitch: 10% of screen (secondary information)
+     - Spacing/margins: 20% (visual breathing room)
+   - **Color consistency:**
+     - Same dark background as Meter Mode
+     - Off-white text for labels and information
+     - Neutral grays for inactive state
+     - Restrained accent color for active state (if used)
+   - **Typography:**
+     - Same sans-serif font family as Meter Mode
+     - Consistent weight hierarchy
+     - Note labels: medium weight
+     - Reference pitch: light weight
+   - **No decoration:** No gradients, shadows, borders, or rounded corners
+   - **Controls feel like instrument switches:** Same visual weight and treatment across all interactive elements
 
 ### Deliverables
 - Complete Sound Mode UI components
@@ -689,6 +792,10 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 - Implement reference pitch adjustment controls
 - Add help documentation
 - Test persistence and immediate application
+- Maintain **measurement instrument on glass** design philosophy
+
+### Design Philosophy Integration
+Settings screen should maintain the minimal, professional aesthetic. Calibration controls should feel like precise instrument adjustments, not app preferences. Incremental adjustments with haptic feedback reinforce the instrument-like interaction model. Help documentation should educate without distraction.
 
 ### Implementation Steps
 
@@ -701,69 +808,105 @@ This implementation plan provides a phased approach to building SimpleTuner usin
 
 **Mobile Implementation:**
 
-1. **Settings Screen Component**
+1. **Settings Screen Component and Navigation**
    - Create `SettingsComponent` extending Component
-   - Design layout: navigation, calibration section, about section
-   - Add back/close button for navigation
-   - Use platform-appropriate presentation (modal or push)
-
-2. **Navigation Implementation**
+   - Maintain dark background consistent with Meter/Sound modes
+   - Layout sections:
+     - **Header:** Back button or close indicator
+     - **Calibration section:** Reference pitch controls (primary)
+     - **Help section:** Accessible help link or button
+     - **About section:** App info and legal
+   - Add back/close button (top-left or appropriate for platform)
+   - Use platform-appropriate presentation (full-screen overlay or modal)
    - Handle settings button tap from main screen
-   - Present settings screen (full-screen overlay or slide-in)
-   - Handle back button to return to previous mode
    - Preserve previous mode state during settings visit
 
-3. **Reference Pitch Display**
-   - Create large text display: "440 Hz"
-   - Font size: 6%+ of screen height
-   - Center horizontally in calibration section
-   - Update display on value change
+2. **Reference Pitch Display and Interaction**
+   - Create centered, large text display: "440 Hz"
+   - **Font size:** ≥6% of screen height, clean sans-serif, medium weight
+   - **Color:** Off-white (neutral), same treatment as Meter Mode headers
+   - **Update:** Display updates immediately on value change
+   - **Presentation:** Centered horizontally, with adequate padding above and below
 
-4. **Increment/Decrement Controls**
-   - Create "−" button (decrement)
-   - Create "+" button (increment)
-   - Position flanking current value display
-   - Minimum size: 44×44 pt / 48×48 dp
-   - Implement repeat behavior on long-press
+3. **Increment/Decrement Controls (Calibration)**
+   - Create "−" button and "+" button for discrete steps
+   - **Button positioning:** Flanking the frequency display horizontally
+   - **Minimum size:** 44×44 pt / 48×48 dp each
+   - **Increment:** 1 Hz per step
+   - **Visual treatment:**
+     - Flat, minimal icon or label style (outline preferred over filled)
+     - Neutral gray when active
+     - Grayed/disabled appearance when at limit
+   - **Interaction:**
+     - Single tap for one step
+     - Tap-based only; consider long-press for continuous adjustment (optional)
+   - **Haptic feedback:**
+     - Soft, uniform haptic tap per discrete step (reinforces instrument-like calibration)
+     - Haptic at each increment/decrement action
+     - Respect system-level haptic disable settings
+   - **Alternative: Stepped Slider**
+     - If preferred, implement stepped slider with visible detents
+     - Maintains discrete step behavior (not continuous)
+     - Same 1 Hz increment per detent
+     - Haptic feedback at each detent position
 
-5. **Range Validation**
-   - Enforce minimum: 410 Hz (disable/gray "−" at limit)
-   - Enforce maximum: 480 Hz (disable/gray "+" at limit)
-   - Visual indication when at boundaries
-   - Haptic feedback optional at limits
+4. **Range Validation and Boundary Handling**
+   - Enforce minimum: 410 Hz (disable "−" button at limit)
+   - Enforce maximum: 480 Hz (disable "+" button at limit)
+   - **Visual indication:**
+     - Grayed appearance for disabled buttons
+     - No action on tap when at boundary
+     - Clear visual feedback that limit is reached
+   - **Haptic feedback (optional):** Subtle feedback when at limit
 
-6. **Reset Button**
-   - Add "Reset to 440 Hz" button
-   - Position below increment/decrement controls
-   - Handle tap to restore default value
-   - Update display immediately
+5. **Reset Button**
+   - Add "Reset to 440 Hz" button below increment/decrement controls
+   - **Visual treatment:** Flat, minimal style, same weight as +/− buttons
+   - **Positioning:** Centered or flanking with +/− buttons
+   - **Minimum size:** 44×44 pt / 48×48 dp
+   - **Interaction:** Single tap to restore default value
+   - **Feedback:** Display updates immediately; optional haptic tap
 
-7. **Value Persistence**
-   - Write to ConfigManager on each change
-   - Handle storage write failures gracefully
+6. **Value Persistence and Application**
+   - Write to ConfigManager on each change (not just on exit)
+   - Handle storage write failures gracefully (retry or notify user)
    - Verify persistence across app restarts
+   - **Immediate application:**
+     - Update FrequencyCalculator with new reference immediately
+     - Recalculate all target frequencies
+     - If in Meter Mode: update cent deviations in real-time
+     - If in Sound Mode with tone playing: transition frequency smoothly (crossfade)
 
-8. **Immediate Application**
-   - Update FrequencyCalculator with new reference
-   - Recalculate all target frequencies
-   - If in Meter Mode: update cent deviations immediately
-   - If in Sound Mode with tone playing: transition frequency smoothly
+7. **Help Documentation Screen**
+   - Create `HelpComponent` with clear, concise content
+   - **Dark background:** Consistent with main UI
+   - **Scrollable content:** For devices with limited height
+   - **Sections:**
+     - **Note Names:** Simple chromatic scale reference (table or list)
+     - **Cents Explained:** What cents are, how they represent pitch deviation
+     - **Tuning Accuracy:** Explanation of ±1 cent target and why it matters
+     - **Pure Intervals:** Meaning of pure major/minor third reference marks
+     - **Reference Pitch:** Purpose of calibration, when to adjust (concert pitch contexts)
+     - **Usage Tips:** Quiet environment, microphone positioning, avoiding wind noise
+   - **Typography:** Light weight, off-white text, ample line spacing
+   - **No decoration:** Simple bullet points or short paragraphs
+   - **Navigation:** Back button or close to return to settings
 
-9. **Help Documentation Screen**
-   - Create `HelpComponent` with scrollable content
-   - Add sections:
-     - Chromatic scale reference (note names table)
-     - Cents explanation and usage
-     - Pure interval marks meaning
-     - Reference pitch calibration purpose
-     - Usage tips (quiet environment, positioning)
-   - Add navigation from help button
+8. **About Section**
+   - Display app name ("SimpleTuner") and version number
+   - Add copyright information ("© [Year] [Author/Organization]")
+   - Brief statement of app purpose (1-2 sentences)
+   - Link to privacy policy (text, not button) if applicable
+   - **Optional:** Credits and acknowledgments (JUCE framework mention)
+   - **Typography:** Light weight, off-white text, minimal visual emphasis
 
-10. **About Section**
-    - Display app name and version number
-    - Add copyright information
-    - Link to privacy policy (if applicable)
-    - Optional: credits and acknowledgments
+9. **Settings Visual Design Summary**
+   - **Color consistency:** Dark background, off-white text, neutral grays
+   - **Typography:** Same sans-serif family as main UI, light weight for secondary text
+   - **Spacing:** Generous margins between sections for clarity
+   - **No decoration:** No gradients, shadows, icons beyond minimal labels
+   - **Touch targets:** All interactive elements meet minimum size guidelines
+   - **Feedback:** Subtle visual change on tap; haptic feedback for calibration steps
 
 ### Deliverables
 - Complete settings screen UI

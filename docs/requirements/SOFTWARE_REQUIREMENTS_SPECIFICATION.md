@@ -57,6 +57,19 @@ All requirements are classified using the following priority scheme:
 - Pitch deviation: Cents
 - File size: Megabytes (MB)
 
+### 1.2.1 UI/UX Design Philosophy
+
+SimpleTuner adopts a **measurement instrument on glass** design metaphor. The application is designed as a professional tuning instrument—not a consumer lifestyle product. The entire phone screen serves as the interface with no representation of a physical enclosure. Key design principles guiding all UI/UX requirements:
+
+- **Precision over decoration:** Visual hierarchy favors accuracy and clarity, not aesthetics for their own sake
+- **Minimal, intentional interaction:** All controls are deliberate and visible; no hidden gestures or playful animations
+- **Restrained feedback:** Visual, motion, and haptic feedback are informational, communicating measurement data—never expressive or attention-seeking
+- **Dark, calm environment:** Charcoal/near-black background reduces eye fatigue and lets indicators stand out
+- **Immediate trust:** The user understands the interface without exploration or learning; it behaves like a measurement instrument
+- **No physical representation:** No virtual enclosure, skeuomorphism, or decorative styling
+
+These design principles directly inform all functional requirements related to visual display, interaction, color usage, and motion throughout the application.
+
 ### 1.3 Project Scope
 
 SimpleTuner provides musicians with a professional-grade, offline-capable tool for accurate instrument tuning through real-time pitch detection and reference tone generation. The application operates entirely on-device without network connectivity requirements, ensuring reliable functionality during practice sessions, rehearsals, and performances in any location.
@@ -935,17 +948,23 @@ The system shall display cent values with precision of ±0.1 cents and shall dis
 **Priority:** CRITICAL  
 The system shall achieve pitch detection accuracy within ±1 cent of the actual fundamental frequency for input signals with signal-to-noise ratio of 40 dB or greater and stable pitch lasting at least 100 ms.
 
-**FR-009: Note Name Display**  
-**Priority:** CRITICAL  
-The system shall display the detected note name (e.g., "A", "C#", "Eb") and octave number (e.g., "4", "3", "5") with font size occupying at least 15% of screen height in portrait orientation, ensuring legibility from typical viewing distances of 30-100 cm.
+**FR-009: Note Name Display**
+**Priority:** CRITICAL
+The system shall display the detected note name (e.g., "A", "C#", "Eb") and octave number (e.g., "4", "3", "5") with font size occupying at least 15% of screen height in portrait orientation, ensuring legibility from typical viewing distances of 30-100 cm. The note name shall be displayed using large, bold, technical sans-serif font with the single letter dominant and accidentals (♯/♭) smaller and cleanly aligned. Color shall be neutral off-white when unstable or no signal detected, transitioning to soft restrained green when stably in tune (±5 cents). Supporting reference frequency information (e.g., "440 Hz") shall be displayed in smaller text below the note with low visual emphasis.
 
-**FR-010: Tuning Meter Visualization**  
-**Priority:** CRITICAL  
-The system shall display an analog-style tuning meter consisting of:
-- Horizontal arc spanning at least 120 degrees of visual angle
-- Cent scale markings at minimum intervals of 10 cents from -50 to +50
-- Animated needle indicating current pitch deviation position
-- Needle movement smoothed with damping coefficient to prevent excessive oscillation while maintaining responsiveness to genuine pitch changes
+**FR-010: Tuning Meter Visualization**
+**Priority:** CRITICAL
+The system shall display an analog-style tuning meter functioning as the primary visual anchor of the interface, consisting of:
+- Wide arc (semi-circular or arc spanning 120-180 degrees of visual angle) spanning most of screen width
+- Thin, precise cent scale markings at 10-cent intervals from -20 to +20 cents
+- Center point clearly labeled as "0"
+- Thin vertical line or narrow wedge-shaped needle indicating current pitch deviation position
+- Needle movement smoothed with damping coefficient (0.7-0.85) to prevent excessive oscillation while maintaining responsiveness to genuine pitch changes
+- No bouncing or spring effects
+- Color behavior: neutral gray/off-white when away from center, subtle transition to restrained green near perfect tuning (±5 cents), no flashing or pulsing
+- Colored zones integrated into meter: red/muted zone for flat/sharp, green zone for in-tune (±5 cents)
+- Pure interval reference marks at -13.7 cents (pure major third) and +15.6 cents (pure minor third) with distinct visual style (small triangle or dot), visible but subtle
+- No decoration, gradients, shadows, or rounded corners
 
 **FR-011: Flat Indicator**  
 **Priority:** CRITICAL  
@@ -967,9 +986,9 @@ The system shall display a reference mark on the tuning meter at -13.7 cents ind
 **Priority:** MEDIUM  
 The system shall display a reference mark on the tuning meter at +15.6 cents indicating the position of a pure minor third interval (frequency ratio 6:5) relative to equal temperament.
 
-**FR-016: Cent Value Numeric Display**  
-**Priority:** HIGH  
-The system shall display the numeric cent deviation value with sign (e.g., "-12.3", "+3.7", "0.0") using font size at least 8% of screen height, positioned adjacent to the tuning meter for users preferring numerical feedback.
+**FR-016: Cent Value Numeric Display**
+**Priority:** HIGH
+The system shall display the numeric cent deviation value with sign and label (e.g., "-12.3 cents", "+3.7 cents", "0.0 cents") using font size at least 8% of screen height, positioned adjacent to or below the tuning meter for users preferring numerical feedback. Color shall be off-white (neutral) when far from center and soft restrained green when in-tune zone (|cents| ≤ 5). Display shall use clean, technical sans-serif typography matching the overall design language.
 
 **FR-017: Detection Confidence Handling**  
 **Priority:** HIGH  
@@ -1016,7 +1035,7 @@ The system shall deactivate pitch detection and cease updating the display when:
 
 Sound Mode enables users to generate continuous reference tones for aural tuning by selecting a note from a one-octave chromatic range and toggling tone playback on or off. The system synthesizes pure sine wave tones at precise frequencies corresponding to 12-tone equal temperament, providing an auditory reference for pitch matching.
 
-This feature supports musicians who prefer tuning by ear, music educators demonstrating target pitches, and scenarios where visual tuning is impractical. The toggle control provides immediate tone activation and deactivation without latency, allowing efficient workflows for quick reference checks.
+This feature supports musicians who prefer tuning by ear, music educators demonstrating target pitches, and scenarios where visual tuning is impractical. The toggle control provides immediate tone activation and deactivation without latency, allowing efficient workflows for quick reference checks. Sound Mode maintains the same minimal, professional aesthetic as Meter Mode—controls feel like instrument switches with clear affordances and no decorative animations.
 
 **Priority:** CRITICAL  
 **Stimulus/Response Sequences:**
@@ -1033,25 +1052,36 @@ This feature supports musicians who prefer tuning by ear, music educators demons
 **Priority:** CRITICAL  
 The system shall provide note selection for one chromatic octave from C4 (261.63 Hz) to C5 (523.25 Hz), inclusive of all twelve notes: C4, C#4, D4, D#4, E4, F4, F#4, G4, G#4, A4, A#4, B4, C5.
 
-**FR-025: Note Selection Interface**  
-**Priority:** CRITICAL  
+**FR-025: Note Selection Interface**
+**Priority:** CRITICAL
 The system shall display a note selection interface using one of the following approaches:
-- Touch-responsive visual keyboard showing all 13 notes (12 chromatic notes plus C5 octave)
-- Scrollable or swipeable note picker
-- Grid of labeled buttons for each note
+- Virtual keyboard: White/black key layout mirroring piano keyboard (flat design, no 3D effects) with white keys (C, D, E, F, G, A, B, C) larger and black keys (C#, D#, F#, G#, A#) smaller and offset
+- Button grid: 13 labeled buttons arranged logically for the note range
+- Scrollable or swipeable note picker with clear labeling
 
-Each selectable note element shall meet minimum touch target size of 44×44 points (iOS) or 48×48 dp (Android).
+**Visual design requirements:**
+- Clean, geometric shapes without decoration, gradients, or shadows
+- Dark background consistent with overall design
+- Clear, technical sans-serif labels for each note
+- Each selectable note element shall meet minimum touch target size of 44×44 points (iOS) or 48×48 dp (Android)
+- Selected note highlighted with subtle color shift or border, no animation
 
 **FR-026: Selected Note Indication**  
 **Priority:** HIGH  
 The system shall visually indicate the currently selected note through highlighting, border emphasis, or color change, ensuring users can identify which note will play when tone generation is activated.
 
-**FR-027: Tone Toggle Control**  
-**Priority:** CRITICAL  
-The system shall provide a toggle control (button or switch) that:
+**FR-027: Tone Toggle Control**
+**Priority:** CRITICAL
+The system shall provide a large toggle control (button or switch) that:
 - Activates continuous tone generation when pressed in the inactive state
 - Deactivates continuous tone generation when pressed in the active state
-- Clearly indicates current state through visual design (e.g., "Play" vs "Stop", toggle position, color change)
+- Clearly indicates current state through visual design (e.g., "Play" vs "Stop" icon/label, color change)
+- Minimum size: 60×60 dp (prominent action, largest control on Sound Mode screen)
+- **Visual treatment:** Flat, minimal icon or label style (outline preferred over filled)
+- **Inactive state:** Neutral gray/off-white color with play icon or "Play" label
+- **Active state:** Distinct but restrained color with stop icon or "Stop" label
+- **Visual feedback:** Subtle opacity change or color shift on press, no bounce or animation effects
+- **Centered placement:** Bottom of screen with adequate margin from screen edge
 
 **FR-028: Tone Generation Activation**  
 **Priority:** CRITICAL  
@@ -1329,13 +1359,17 @@ When in Sound Mode, the system shall prioritize visual prominence in descending 
 3. Selected note indication (clear visibility)
 4. Mode selection and settings controls (smallest, peripheral)
 
-**FR-073: Color Coding for Tuning Status**  
-**Priority:** HIGH  
-The system shall use color coding to communicate tuning status:
-- Green zone or indicator: In tune (±5 cents)
-- Yellow/orange zone: Slightly out of tune (5-20 cents deviation)
-- Red zone: Significantly out of tune (>20 cents deviation)
-- Colors shall be chosen to maintain accessibility for color vision deficiencies (avoid red-green only distinction)
+**FR-073: Color Coding for Tuning Status**
+**Priority:** HIGH
+The system shall use restrained color coding to communicate tuning status:
+- **Background:** Dark charcoal or near-black (not pure #000000), matte appearance, no texture or gradients
+- **Primary text:** Off-white color for labels and information
+- **In-tune indication (±5 cents):** Restrained green (subtle, not neon or saturated)
+- **Out-of-tune zones:** Neutral gray or muted red (away from center), integrated into meter arc
+- **Inactive elements:** Muted gray
+- **Design principle:** Color communicates state information, not emotion; no flashing, pulsing, or attention-seeking color changes
+- **Accessibility:** Colors chosen to maintain distinction for color vision deficiencies; not solely red-green distinction
+- **No decoration:** No gradients, shadows, or color overlays for visual effect
 
 **FR-074: Touch Target Spacing**  
 **Priority:** HIGH  
@@ -1373,13 +1407,16 @@ The system may provide an option to lock interface to portrait or landscape orie
 **Priority:** LOW  
 The system may provide an optional full-screen mode hiding all controls except core tuning display (note, meter, cent value) for distraction-free tuning focus.
 
-**FR-082: Visual Feedback for Interactions**  
-**Priority:** MEDIUM  
-The system should provide immediate visual feedback for all touch interactions:
-- Button press: Highlight or scale animation
-- Toggle state change: Color or position transition
-- Note selection: Selection highlight animation
-- All feedback completing within 100 ms of touch event
+**FR-082: Visual Feedback for Interactions**
+**Priority:** MEDIUM
+The system should provide minimal, informational visual feedback for all touch interactions:
+- **Button press:** Subtle opacity change or color shift (no ripple/splash effects or scale animation)
+- **Toggle state change:** Immediate color or opacity transition indicating new state
+- **Note selection:** Subtle selection highlight (opacity/border change, not animation)
+- **All feedback completing within 100 ms** of touch event
+- **Design principle:** Feedback shall be informational and restrained, never expressive or playful
+- **No decorative animation:** No bounce effects, scale transforms, or attention-seeking motion
+- **Tactile affordance:** Touch targets should feel like instrument switches with clear, direct responses
 
 ---
 
