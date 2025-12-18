@@ -42,16 +42,16 @@ void TuningMeterComponent::timerCallback() {
 }
 
 float TuningMeterComponent::cents_to_angle(float cents) const noexcept {
-  // Map cents range [-100, +100] to 90° arc span
+  // Map cents range [-50, +50] to 90° arc span
   // Center (0 cents) = 270° (pointing straight UP)
-  // -100 cents (flat) = 315° (upper-left)
-  // +100 cents (sharp) = 225° (upper-right)
+  // -50 cents (flat) = 315° (upper-left)
+  // +50 cents (sharp) = 225° (upper-right)
   // Negative cents (flat) -> larger angle (LEFT)
   // Positive cents (sharp) -> smaller angle (RIGHT)
 
   constexpr float center_angle = 270.0f;  // Straight up
   constexpr float half_arc_span = 45.0f;  // 90° total / 2 = 45° each side
-  constexpr float cents_range = 100.0f;   // ±100 cents
+  constexpr float cents_range = 50.0f;    // ±50 cents
 
   // Normalize cents to [-1, 1] range
   float normalized = cents / cents_range;
@@ -59,26 +59,27 @@ float TuningMeterComponent::cents_to_angle(float cents) const noexcept {
 
   // Map to angle: flat (negative) increases angle (goes left/counterclockwise)
   // sharp (positive) decreases angle (goes right/clockwise)
-  // -100¢ = 345°, 0¢ = 270°, +100¢ = 195°
+  // -50¢ = 315°, 0¢ = 270°, +50¢ = 225°
   float angle_degrees = center_angle + (normalized * half_arc_span);
   return angle_degrees * kDegreesToRadians;
 }
 
 void TuningMeterComponent::draw_arc(juce::Graphics& g) {
-  // Arc drawing removed - dots and radial lines now extend to ±100 cents
+  // Arc drawing removed - dots and radial lines now extend to ±50 cents
   (void)g;  // Suppress unused parameter warning
 }
 
 void TuningMeterComponent::draw_radial_lines(juce::Graphics& g) {
-  // Draw radial lines from center for every 5 cents (±100 range)
-  // Lines extend from 1/3 to 95% of radius (bottom 1/3 cut off)
+  // Draw radial lines from center for every 2.5 cents (±50 range)
+  // Lines extend from 1/3 to 98% of radius (bottom 1/3 cut off)
   constexpr float line_start_ratio = 0.333f;  // Start at 1/3 from center
-  constexpr float line_end_ratio = 0.95f;  // End 95% of radius (short of dots)
+  constexpr float line_end_ratio = 0.98f;  // End 98% of radius (short of dots)
 
   g.setColour(ui::kMeterNeutral.withAlpha(0.4f));  // Lighter gray
 
-  for (int cents = -100; cents <= 100; cents += 5) {
-    float angle = cents_to_angle(static_cast<float>(cents));
+  // Use float for loop to handle 2.5 cent increments
+  for (float cents = -50.0f; cents <= 50.0f; cents += 2.5f) {
+    float angle = cents_to_angle(cents);
 
     float line_start_x =
         meter_center_x_ + (meter_radius_ * line_start_ratio) * std::cos(angle);
@@ -95,21 +96,26 @@ void TuningMeterComponent::draw_radial_lines(juce::Graphics& g) {
 }
 
 void TuningMeterComponent::draw_cent_dots(juce::Graphics& g) {
-  // Draw dots at every 10 cents from -100 to +100
-  // Dots at ±20, ±40, ±60, ±80, ±100 are 3x larger than others
-  constexpr float small_dot_radius = 2.0f;
-  constexpr float large_dot_radius = 6.0f;
+  // Draw dots at every 5 cents from -50 to +50
+  // Small dots at every 5 cents, large dots at every 10 cents
+  // Skip center (0 cents) - replaced by triangle
+  constexpr float small_dot_radius = 1.0f;
+  constexpr float large_dot_radius = 2.0f;
 
   g.setColour(ui::kMeterNeutral);
 
-  for (int cents = -100; cents <= 100; cents += 10) {
+  for (int cents = -50; cents <= 50; cents += 5) {
+    if (cents == 0) {
+      continue;  // Skip center - triangle drawn separately
+    }
+
     float angle = cents_to_angle(static_cast<float>(cents));
 
     float dot_x = meter_center_x_ + meter_radius_ * std::cos(angle);
     float dot_y = meter_center_y_ + meter_radius_ * std::sin(angle);
 
-    // Determine if this is a major interval (every 20 cents)
-    bool is_major = (cents % 20 == 0 && cents != 0);
+    // Large dots at every 10 cents, small dots at every 5 cents
+    bool is_major = (cents % 10 == 0);
     float dot_radius = is_major ? large_dot_radius : small_dot_radius;
 
     g.fillEllipse(dot_x - dot_radius, dot_y - dot_radius, dot_radius * 2.0f,
@@ -158,17 +164,114 @@ void TuningMeterComponent::draw_cent_dots(juce::Graphics& g) {
              juce::Justification::centred);
 }
 
-void TuningMeterComponent::draw_interval_marker(juce::Graphics& g,
-                                                float cents) {
-  // These are optional - not currently drawn, reserved for future use
-  // Pure interval markers could be drawn here if desired
+void TuningMeterComponent::draw_center_triangle(juce::Graphics& g) {
+  // Draw equilateral triangle at center (0 cents)
+  // 4/3 larger than major interval dots (which have radius 2.0)
+  constexpr float large_dot_radius = 2.0f;
+  constexpr float triangle_size = large_dot_radius * 1.5f;
+  constexpr float triangle_start_ratio = 1.01f;
+
+  float angle = cents_to_angle(0.0f);
+  float center_x = meter_center_x_ + (meter_radius_ * triangle_start_ratio) * std::cos(angle);
+  float center_y = meter_center_y_ + (meter_radius_ * triangle_start_ratio) * std::sin(angle);
+
+  // Create equilateral triangle pointing toward meter center
+  // Direction vector from triangle center to meter center
+  float dx = meter_center_x_ - center_x;
+  float dy = meter_center_y_ - center_y;
+  float dist = std::sqrt(dx * dx + dy * dy);
+  float dir_x = dx / dist;  // Normalized
+  float dir_y = dy / dist;
+
+  // Perpendicular vector
+  float perp_x = -dir_y;
+  float perp_y = dir_x;
+
+  // Height of equilateral triangle: h = (sqrt(3)/2) * side
+  constexpr float sqrt3_over_2 = 0.866025404f;
+  float side_length = triangle_size * 2.0f;
+  float height = side_length * sqrt3_over_2;
+
+  // Tip points toward center (2/3 from base)
+  float tip_x = center_x + dir_x * (height * 2.0f / 3.0f);
+  float tip_y = center_y + dir_y * (height * 2.0f / 3.0f);
+
+  // Base vertices (perpendicular to direction)
+  float base_offset = height / 3.0f;
+  float base_center_x = center_x - dir_x * base_offset;
+  float base_center_y = center_y - dir_y * base_offset;
+
+  float half_base = side_length / 2.0f;
+  float base_left_x = base_center_x + perp_x * half_base;
+  float base_left_y = base_center_y + perp_y * half_base;
+  float base_right_x = base_center_x - perp_x * half_base;
+  float base_right_y = base_center_y - perp_y * half_base;
+
+  juce::Path triangle;
+  triangle.addTriangle(tip_x, tip_y, base_left_x, base_left_y, base_right_x,
+                       base_right_y);
+
+  g.setColour(ui::kMeterNeutral);
+  g.fillPath(triangle);
+}
+
+void TuningMeterComponent::draw_interval_wedge(juce::Graphics& g, float cents) {
+  // Draw wedge triangle at interval position
+  // Size matches large dots (major interval dots)
+  // Wedge: base is 90% of side length
+  // Tips point inward toward center, aligned with radial line ends
+  constexpr float large_dot_radius = 2.0f;  // Match major interval dots
+  constexpr float triangle_size = large_dot_radius;
+  constexpr float line_end_ratio = 0.98f;  // Match radial line ends
+
+  float angle = cents_to_angle(cents);
+
+  // Position tip at radial line end (pointing toward center)
+  float tip_x =
+      meter_center_x_ + (meter_radius_ * line_end_ratio) * std::cos(angle);
+  float tip_y =
+      meter_center_y_ + (meter_radius_ * line_end_ratio) * std::sin(angle);
+
+  // Direction toward meter center (tip points inward)
+  float dx = meter_center_x_ - tip_x;
+  float dy = meter_center_y_ - tip_y;
+  float dist = std::sqrt(dx * dx + dy * dy);
+  float dir_x = dx / dist;
+  float dir_y = dy / dist;
+
+  // Perpendicular vector
+  float perp_x = -dir_y;
+  float perp_y = dir_x;
+
+  // Wedge: base is 5/6 of side length
+  constexpr float sqrt3_over_2 = 0.866025404f;
+  float side_length = triangle_size * 2.0f;
+  float base_length = side_length * (5.0f / 6.0f);
+  float height = side_length * sqrt3_over_2;
+
+  // Base is outward from tip (tip points toward center)
+  float base_center_x = tip_x - dir_x * height;
+  float base_center_y = tip_y - dir_y * height;
+
+  float half_base = base_length / 2.0f;
+  float base_left_x = base_center_x + perp_x * half_base;
+  float base_left_y = base_center_y + perp_y * half_base;
+  float base_right_x = base_center_x - perp_x * half_base;
+  float base_right_y = base_center_y - perp_y * half_base;
+
+  juce::Path wedge;
+  wedge.addTriangle(tip_x, tip_y, base_left_x, base_left_y, base_right_x,
+                    base_right_y);
+
+  g.setColour(ui::kMeterNeutral);
+  g.fillPath(wedge);
 }
 
 void TuningMeterComponent::draw_needle(juce::Graphics& g) {
   if (!has_signal_) {
     return;
   }
-  constexpr float line_end_ratio = 0.95f;  // End 95% of radius (short of dots)
+  constexpr float line_end_ratio = 0.98f;  // End 98% of radius (short of dots)
 
   float needle_angle = cents_to_angle(current_needle_position_);
 
@@ -193,12 +296,13 @@ void TuningMeterComponent::draw_needle(juce::Graphics& g) {
 
 void TuningMeterComponent::paint(juce::Graphics& g) {
   // Draw in order from back to front:
-  draw_arc(g);           // Arc outline
-  draw_radial_lines(g);  // Radial lines radiating from center
-  draw_cent_dots(g);     // Dots at 10-cent intervals
-  draw_interval_marker(g, ui::kPureMajorThirdCents);  // Reserved for future
-  draw_interval_marker(g, ui::kPureMinorThirdCents);  // Reserved for future
-  draw_needle(g);                                     // Needle on top
+  draw_arc(g);              // Arc outline
+  draw_radial_lines(g);     // Radial lines radiating from center
+  draw_cent_dots(g);        // Dots at 10-cent intervals
+  draw_center_triangle(g);  // Center triangle at 0 cents
+  draw_interval_wedge(g, ui::kPureMajorThirdCents);  // Major third wedge
+  draw_interval_wedge(g, ui::kPureMinorThirdCents);  // Minor third wedge
+  draw_needle(g);                                    // Needle on top
 }
 
 void TuningMeterComponent::resized() {

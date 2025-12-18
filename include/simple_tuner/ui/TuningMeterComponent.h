@@ -43,7 +43,8 @@ class TuningMeterComponent : public juce::Component, private juce::Timer {
   void draw_arc(juce::Graphics& g);
   void draw_radial_lines(juce::Graphics& g);
   void draw_cent_dots(juce::Graphics& g);
-  void draw_interval_marker(juce::Graphics& g, float cents);
+  void draw_center_triangle(juce::Graphics& g);
+  void draw_interval_wedge(juce::Graphics& g, float cents);
   void draw_needle(juce::Graphics& g);
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TuningMeterComponent)
