@@ -11,7 +11,7 @@ class FrequencyCalculator;
 
 class NoteDisplayComponent : public juce::Component {
  public:
-  NoteDisplayComponent();
+  explicit NoteDisplayComponent(std::shared_ptr<FrequencyCalculator> freq_calc);
   ~NoteDisplayComponent() override = default;
 
   // Update displayed note from MIDI number
@@ -29,7 +29,7 @@ class NoteDisplayComponent : public juce::Component {
   void resized() override;
 
  private:
-  std::unique_ptr<FrequencyCalculator> frequency_calculator_;
+  std::shared_ptr<FrequencyCalculator> frequency_calculator_;
 
   juce::String note_letter_;
   juce::String accidental_;

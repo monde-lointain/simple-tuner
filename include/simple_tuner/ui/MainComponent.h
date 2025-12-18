@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include <juce_gui_basics/juce_gui_basics.h>
+#include "simple_tuner/ui/ModeSelector.h"
 
-#include "simple_tuner/ui/ModeSelector.h" 
+#include <juce_gui_basics/juce_gui_basics.h>
 
 namespace simple_tuner {
 
@@ -19,7 +19,7 @@ class MainComponent : public juce::Component, private juce::Timer {
  public:
   enum class AppMode { kMeter, kSound };
 
-  MainComponent();
+  explicit MainComponent(std::shared_ptr<FrequencyCalculator> freq_calc);
   ~MainComponent() override;
 
   void paint(juce::Graphics& g) override;
@@ -39,7 +39,7 @@ class MainComponent : public juce::Component, private juce::Timer {
 
   // Controllers and calculators
   PitchDetectionController* pitch_controller_;
-  std::unique_ptr<FrequencyCalculator> frequency_calculator_;
+  std::shared_ptr<FrequencyCalculator> frequency_calculator_;
 
   // State
   AppMode current_mode_;

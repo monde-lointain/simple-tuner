@@ -8,12 +8,10 @@ iOSConfigStorage::iOSConfigStorage() = default;
 
 iOSConfigStorage::~iOSConfigStorage() = default;
 
-bool iOSConfigStorage::set_double(const std::string& key,
-                                   double value) noexcept {
+bool iOSConfigStorage::set_double(const std::string& key, double value) noexcept {
   @try {
     std::string prefixed_key = kKeyPrefix + key;
-    NSString* ns_key =
-        [NSString stringWithUTF8String:prefixed_key.c_str()];
+    NSString* ns_key = [NSString stringWithUTF8String:prefixed_key.c_str()];
 
     if (ns_key == nil) {
       return false;
@@ -35,8 +33,7 @@ std::optional<double> iOSConfigStorage::get_double(
     const std::string& key) const noexcept {
   @try {
     std::string prefixed_key = kKeyPrefix + key;
-    NSString* ns_key =
-        [NSString stringWithUTF8String:prefixed_key.c_str()];
+    NSString* ns_key = [NSString stringWithUTF8String:prefixed_key.c_str()];
 
     if (ns_key == nil) {
       return std::nullopt;
@@ -62,8 +59,7 @@ std::optional<double> iOSConfigStorage::get_double(
 bool iOSConfigStorage::remove(const std::string& key) noexcept {
   @try {
     std::string prefixed_key = kKeyPrefix + key;
-    NSString* ns_key =
-        [NSString stringWithUTF8String:prefixed_key.c_str()];
+    NSString* ns_key = [NSString stringWithUTF8String:prefixed_key.c_str()];
 
     if (ns_key == nil) {
       return false;
@@ -105,4 +101,4 @@ void iOSConfigStorage::clear() noexcept {
   }
 }
 
-}  // namespace simple_tuner
+} // namespace simple_tuner

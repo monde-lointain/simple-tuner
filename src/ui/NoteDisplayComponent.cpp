@@ -9,8 +9,9 @@
 
 namespace simple_tuner {
 
-NoteDisplayComponent::NoteDisplayComponent()
-    : frequency_calculator_(std::make_unique<FrequencyCalculator>()),
+NoteDisplayComponent::NoteDisplayComponent(
+    std::shared_ptr<FrequencyCalculator> freq_calc)
+    : frequency_calculator_(std::move(freq_calc)),
       note_letter_("--"),
       accidental_(""),
       reference_freq_(""),
@@ -94,9 +95,7 @@ void NoteDisplayComponent::paint(juce::Graphics& g) {
   }
 
   // Determine color: green if in tune, neutral otherwise
-  juce::Colour note_color = (std::abs(current_cents_) <= ui::kInTuneThreshold)
-                                ? ui::kTextInTune
-                                : ui::kTextNeutral;
+  juce::Colour note_color = ui::get_tuning_color_for_text(current_cents_);
 
   auto bounds = getLocalBounds();
   int note_letter_height =
@@ -111,19 +110,34 @@ void NoteDisplayComponent::paint(juce::Graphics& g) {
   g.setFont(juce::FontOptions(note_letter_height, juce::Font::bold));
 
   auto note_area = bounds.removeFromTop(note_letter_height);
-  int note_width = g.getCurrentFont().getStringWidth(note_letter_);
+
+  // Calculate width for positioning accidental
+  juce::GlyphArrangement glyphs;
+  glyphs.addLineOfText(g.getCurrentFont(), note_letter_, 0.0f, 0.0f);
+  int note_width =
+      static_cast<int>(glyphs.getBoundingBox(0, -1, true).getWidth());
   int center_x = getWidth() / 2;
 
-  g.drawText(note_letter_, center_x - note_width / 2, note_area.getY(),
-             note_width, note_letter_height, juce::Justification::centred);
+  // Draw note centered in its area
+  g.drawText(note_letter_, note_area, juce::Justification::centred);
 
   // Draw accidental if present (smaller, to the right of note)
   if (accidental_.isNotEmpty()) {
     g.setFont(juce::FontOptions(accidental_height, juce::Font::bold));
+
+    // Calculate accidental width and position it to the right of note
+    juce::GlyphArrangement accidental_glyphs;
+    accidental_glyphs.addLineOfText(g.getCurrentFont(), accidental_, 0.0f,
+                                    0.0f);
+    int accidental_width = static_cast<int>(
+        accidental_glyphs.getBoundingBox(0, -1, true).getWidth());
     int accidental_x = center_x + note_width / 2 + 5;  // 5px spacing
-    int accidental_width = g.getCurrentFont().getStringWidth(accidental_);
-    g.drawText(accidental_, accidental_x, note_area.getY(), accidental_width,
-               accidental_height, juce::Justification::centred);
+
+    // Give extra space to prevent truncation
+    juce::Rectangle<int> accidental_area(accidental_x, note_area.getY(),
+                                         accidental_width + 20,
+                                         accidental_height);
+    g.drawText(accidental_, accidental_area, juce::Justification::centredLeft);
   }
 
   // Draw reference frequency (small, below note)

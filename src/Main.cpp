@@ -1,14 +1,11 @@
+#include "simple_tuner/algorithms/FrequencyCalculator.h"
 #include "simple_tuner/controllers/PitchDetectionController.h"
 #include "simple_tuner/platform/mobile/AudioManager.h"
+#include "simple_tuner/platform/PlatformFactory.h"
+#include "simple_tuner/ui/AlertHelpers.h"
 #include "simple_tuner/ui/MainComponent.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
-
-#if JUCE_IOS
-#include "simple_tuner/platform/ios/iOSPermissions.h"
-#elif JUCE_ANDROID
-#include "simple_tuner/platform/android/AndroidPermissions.h"
-#endif
 
 class SimpleTunerApplication : public juce::JUCEApplication {
  public:
@@ -54,16 +51,10 @@ class SimpleTunerApplication : public juce::JUCEApplication {
  private:
   std::unique_ptr<juce::DocumentWindow> main_window_;
   std::unique_ptr<simple_tuner::PitchDetectionController> pitch_controller_;
-
-#if JUCE_IOS
-  std::unique_ptr<simple_tuner::iOSPermissions> permissions_;
-#elif JUCE_ANDROID
-  std::unique_ptr<simple_tuner::AndroidPermissions> permissions_;
-#endif
+  std::unique_ptr<simple_tuner::IPermissions> permissions_;
 
   void request_permissions() {
-#if JUCE_IOS
-    permissions_ = std::make_unique<simple_tuner::iOSPermissions>();
+    permissions_ = simple_tuner::PlatformFactory::create_permissions();
 
     auto status = permissions_->get_microphone_status();
     if (status == simple_tuner::PermissionStatus::kGranted) {
@@ -76,22 +67,6 @@ class SimpleTunerApplication : public juce::JUCEApplication {
     } else {
       show_permission_denied_message();
     }
-#elif JUCE_ANDROID
-    permissions_ = std::make_unique<simple_tuner::AndroidPermissions>();
-
-    auto status = permissions_->get_microphone_status();
-    if (status == simple_tuner::PermissionStatus::kGranted) {
-      initialize_audio_and_ui();
-    } else {
-      permissions_->request_microphone_permission(
-          [this](simple_tuner::PermissionStatus result) {
-            handle_permission_result(result);
-          });
-    }
-#else
-    // Desktop or other platforms - no permissions needed
-    initialize_audio_and_ui();
-#endif
   }
 
   void handle_permission_result(simple_tuner::PermissionStatus status) {
@@ -134,6 +109,10 @@ class SimpleTunerApplication : public juce::JUCEApplication {
         return;
       }
 
+      // Create shared frequency calculator
+      auto frequency_calculator =
+          std::make_shared<simple_tuner::FrequencyCalculator>();
+
       // Create main window
       main_window_ = std::make_unique<juce::DocumentWindow>(
           "SimpleTuner",
@@ -142,7 +121,8 @@ class SimpleTunerApplication : public juce::JUCEApplication {
           juce::DocumentWindow::allButtons);
 
       main_window_->setUsingNativeTitleBar(true);
-      auto* main_component = new simple_tuner::MainComponent();
+      auto* main_component =
+          new simple_tuner::MainComponent(frequency_calculator);
       main_component->set_pitch_controller(pitch_controller_.get());
       main_window_->setContentOwned(main_component, true);
 
@@ -160,20 +140,18 @@ class SimpleTunerApplication : public juce::JUCEApplication {
   }
 
   void show_permission_denied_message() {
-    juce::AlertWindow::showMessageBoxAsync(
+    simple_tuner::show_alert(
         juce::AlertWindow::WarningIcon, "Permission Denied",
         "SimpleTuner needs microphone access to detect pitch. "
         "Please enable microphone permission in Settings.",
-        "OK", nullptr,
-        juce::ModalCallbackFunction::create([this](int) { quit(); }));
+        "OK", [this]() { quit(); });
   }
 
   void show_audio_error_message() {
-    juce::AlertWindow::showMessageBoxAsync(
+    simple_tuner::show_alert(
         juce::AlertWindow::WarningIcon, "Audio Error",
         "Failed to initialize audio device. Please check your audio settings.",
-        "OK", nullptr,
-        juce::ModalCallbackFunction::create([this](int) { quit(); }));
+        "OK", [this]() { quit(); });
   }
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleTunerApplication)

@@ -7,10 +7,19 @@
 
 namespace simple_tuner {
 
+// Configuration for tuning meter geometry and behavior
+struct TuningMeterConfig {
+  float center_angle_deg = 270.0f;  // Needle center (270° = straight up)
+  float arc_span_deg = 90.0f;       // Total arc span
+  float cents_range = 50.0f;        // ±cents range
+  float damping = 0.80f;            // Animation damping coefficient
+};
+
 // Week 2: Full tuning meter with arc, tick marks, and animated needle
 class TuningMeterComponent : public juce::Component, private juce::Timer {
  public:
   TuningMeterComponent();
+  explicit TuningMeterComponent(const TuningMeterConfig& config);
   ~TuningMeterComponent() override;
 
   // Update needle position (target position for damped animation)
@@ -24,6 +33,9 @@ class TuningMeterComponent : public juce::Component, private juce::Timer {
   void resized() override;
 
  private:
+  // Configuration
+  TuningMeterConfig config_;
+
   // Needle state
   float target_needle_position_;
   float current_needle_position_;

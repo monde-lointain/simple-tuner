@@ -8,12 +8,17 @@ StatusIndicatorComponent::StatusIndicatorComponent()
     : current_status_(Status::kNoSignal), status_text_("--") {}
 
 void StatusIndicatorComponent::update_status(float cents) noexcept {
-  if (cents < -ui::kInTuneThreshold) {
-    current_status_ = Status::kFlat;
-  } else if (cents > ui::kInTuneThreshold) {
-    current_status_ = Status::kSharp;
-  } else {
-    current_status_ = Status::kInTune;
+  ui::TuningStatus status = ui::get_tuning_status(cents);
+  switch (status) {
+    case ui::TuningStatus::kFlat:
+      current_status_ = Status::kFlat;
+      break;
+    case ui::TuningStatus::kInTune:
+      current_status_ = Status::kInTune;
+      break;
+    case ui::TuningStatus::kSharp:
+      current_status_ = Status::kSharp;
+      break;
   }
   update_text();
   repaint();

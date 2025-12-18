@@ -5,6 +5,7 @@
 
 #include "simple_tuner/algorithms/FrequencyCalculator.h"
 #include "simple_tuner/controllers/PitchDetectionController.h"
+#include "simple_tuner/ui/AlertHelpers.h"
 #include "simple_tuner/ui/ModeSelector.h"
 #include "simple_tuner/ui/NoteDisplayComponent.h"
 #include "simple_tuner/ui/StatusIndicatorComponent.h"
@@ -13,9 +14,9 @@
 
 namespace simple_tuner {
 
-MainComponent::MainComponent()
+MainComponent::MainComponent(std::shared_ptr<FrequencyCalculator> freq_calc)
     : pitch_controller_(nullptr),
-      frequency_calculator_(std::make_unique<FrequencyCalculator>()),
+      frequency_calculator_(std::move(freq_calc)),
       current_mode_(AppMode::kMeter) {
   initialize_ui();
   setSize(400, 600);
@@ -27,7 +28,8 @@ MainComponent::~MainComponent() { stopTimer(); }
 void MainComponent::initialize_ui() noexcept {
   try {
     // Create note display component
-    note_display_ = std::make_unique<NoteDisplayComponent>();
+    note_display_ =
+        std::make_unique<NoteDisplayComponent>(frequency_calculator_);
     addAndMakeVisible(note_display_.get());
 
     // Create tuning meter component (placeholder for Week 1)
@@ -50,9 +52,8 @@ void MainComponent::initialize_ui() noexcept {
         "Settings", juce::DrawableButton::ImageOnButtonBackground);
     settings_button_->setButtonText("⚙");
     settings_button_->onClick = [this]() {
-      juce::AlertWindow::showMessageBoxAsync(
-          juce::AlertWindow::InfoIcon, "Settings",
-          "Settings screen coming in Phase 6", "OK");
+      show_alert(juce::AlertWindow::InfoIcon, "Settings",
+                 "Settings screen coming in Phase 6");
     };
     addAndMakeVisible(settings_button_.get());
 
@@ -183,9 +184,7 @@ void MainComponent::timerCallback() {
     status_indicator_->update_status(static_cast<float>(cents));
 
     // Update cent label color based on in-tune status
-    juce::Colour cent_color = (std::abs(cents) <= ui::kInTuneThreshold)
-                                  ? ui::kTextInTune
-                                  : ui::kTextNeutral;
+    juce::Colour cent_color = ui::get_tuning_color_for_text(cents);
     cent_value_label_.setColour(juce::Label::textColourId, cent_color);
 
   } else {

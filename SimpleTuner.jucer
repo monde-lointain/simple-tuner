@@ -22,6 +22,10 @@
             file="src/controllers/PitchDetectionController.cpp"/>
     </GROUP>
     <GROUP id="{F8A1B2C3-D4E5-F6A7-B8C9-D0E1F2A3B4C5}" name="platform">
+      <GROUP id="{E7F8A9B0-C1D2-E3F4-A5B6-C7D8E9F0A1B2}" name="common">
+        <FILE id="pfCommon1" name="PlatformFactory.cpp" compile="1" resource="0"
+              file="src/platform/common/PlatformFactory.cpp"/>
+      </GROUP>
       <GROUP id="{A1B2C3D4-E5F6-A7B8-C9D0-E1F2A3B4C5D6}" name="mobile">
         <FILE id="mAMgr1" name="AudioManager.cpp" compile="1" resource="0"
               file="src/platform/mobile/AudioManager.cpp"/>

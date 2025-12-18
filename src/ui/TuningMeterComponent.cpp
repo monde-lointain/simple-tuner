@@ -12,7 +12,11 @@ constexpr float kDegreesToRadians = kPi / 180.0f;
 }  // namespace
 
 TuningMeterComponent::TuningMeterComponent()
-    : target_needle_position_(0.0f),
+    : TuningMeterComponent(TuningMeterConfig{}) {}
+
+TuningMeterComponent::TuningMeterComponent(const TuningMeterConfig& config)
+    : config_(config),
+      target_needle_position_(0.0f),
       current_needle_position_(0.0f),
       has_signal_(false),
       meter_center_x_(0.0f),
@@ -36,31 +40,25 @@ void TuningMeterComponent::set_no_signal() noexcept {
 void TuningMeterComponent::timerCallback() {
   // Apply damping to needle position
   current_needle_position_ +=
-      (target_needle_position_ - current_needle_position_) *
-      ui::kDampingCoefficient;
+      (target_needle_position_ - current_needle_position_) * config_.damping;
   repaint();
 }
 
 float TuningMeterComponent::cents_to_angle(float cents) const noexcept {
-  // Map cents range [-50, +50] to 90° arc span
-  // Center (0 cents) = 270° (pointing straight UP)
-  // -50 cents (flat) = 315° (upper-left)
-  // +50 cents (sharp) = 225° (upper-right)
+  // Map cents range [-config.cents_range, +config.cents_range] to arc span
+  // Center (0 cents) = config.center_angle_deg
   // Negative cents (flat) -> larger angle (LEFT)
   // Positive cents (sharp) -> smaller angle (RIGHT)
 
-  constexpr float center_angle = 270.0f;  // Straight up
-  constexpr float half_arc_span = 45.0f;  // 90° total / 2 = 45° each side
-  constexpr float cents_range = 50.0f;    // ±50 cents
+  float half_arc_span = config_.arc_span_deg / 2.0f;
 
   // Normalize cents to [-1, 1] range
-  float normalized = cents / cents_range;
+  float normalized = cents / config_.cents_range;
   normalized = std::max(-1.0f, std::min(1.0f, normalized));
 
   // Map to angle: flat (negative) increases angle (goes left/counterclockwise)
   // sharp (positive) decreases angle (goes right/clockwise)
-  // -50¢ = 315°, 0¢ = 270°, +50¢ = 225°
-  float angle_degrees = center_angle + (normalized * half_arc_span);
+  float angle_degrees = config_.center_angle_deg + (normalized * half_arc_span);
   return angle_degrees * kDegreesToRadians;
 }
 
@@ -70,7 +68,7 @@ void TuningMeterComponent::draw_arc(juce::Graphics& g) {
 }
 
 void TuningMeterComponent::draw_radial_lines(juce::Graphics& g) {
-  // Draw radial lines from center for every 2.5 cents (±50 range)
+  // Draw radial lines from center for every 2.5 cents (±config.cents_range)
   // Lines extend from 1/3 to 98% of radius (bottom 1/3 cut off)
   constexpr float line_start_ratio = 0.333f;  // Start at 1/3 from center
   constexpr float line_end_ratio = 0.98f;  // End 98% of radius (short of dots)
@@ -78,7 +76,8 @@ void TuningMeterComponent::draw_radial_lines(juce::Graphics& g) {
   g.setColour(ui::kMeterNeutral.withAlpha(0.4f));  // Lighter gray
 
   // Use float for loop to handle 2.5 cent increments
-  for (float cents = -50.0f; cents <= 50.0f; cents += 2.5f) {
+  for (float cents = -config_.cents_range; cents <= config_.cents_range;
+       cents += 2.5f) {
     float angle = cents_to_angle(cents);
 
     float line_start_x =
@@ -96,7 +95,7 @@ void TuningMeterComponent::draw_radial_lines(juce::Graphics& g) {
 }
 
 void TuningMeterComponent::draw_cent_dots(juce::Graphics& g) {
-  // Draw dots at every 5 cents from -50 to +50
+  // Draw dots at every 5 cents from -config.cents_range to +config.cents_range
   // Small dots at every 5 cents, large dots at every 10 cents
   // Skip center (0 cents) - replaced by triangle
   constexpr float small_dot_radius = 1.0f;
@@ -104,7 +103,8 @@ void TuningMeterComponent::draw_cent_dots(juce::Graphics& g) {
 
   g.setColour(ui::kMeterNeutral);
 
-  for (int cents = -50; cents <= 50; cents += 5) {
+  int cents_range_int = static_cast<int>(config_.cents_range);
+  for (int cents = -cents_range_int; cents <= cents_range_int; cents += 5) {
     if (cents == 0) {
       continue;  // Skip center - triangle drawn separately
     }
@@ -172,8 +172,10 @@ void TuningMeterComponent::draw_center_triangle(juce::Graphics& g) {
   constexpr float triangle_start_ratio = 1.01f;
 
   float angle = cents_to_angle(0.0f);
-  float center_x = meter_center_x_ + (meter_radius_ * triangle_start_ratio) * std::cos(angle);
-  float center_y = meter_center_y_ + (meter_radius_ * triangle_start_ratio) * std::sin(angle);
+  float center_x = meter_center_x_ +
+                   (meter_radius_ * triangle_start_ratio) * std::cos(angle);
+  float center_y = meter_center_y_ +
+                   (meter_radius_ * triangle_start_ratio) * std::sin(angle);
 
   // Create equilateral triangle pointing toward meter center
   // Direction vector from triangle center to meter center
@@ -283,9 +285,7 @@ void TuningMeterComponent::draw_needle(juce::Graphics& g) {
 
   // Determine needle color based on in-tune status
   juce::Colour needle_color =
-      (std::abs(current_needle_position_) <= ui::kInTuneThreshold)
-          ? ui::kTextInTune
-          : ui::kMeterNeutral;
+      ui::get_tuning_color_for_meter(current_needle_position_);
 
   g.setColour(needle_color);
 

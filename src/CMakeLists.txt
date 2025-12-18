@@ -11,6 +11,9 @@ add_library(simple_tuner_core STATIC
   # Controllers
   controllers/PitchDetectionController.cpp
 
+  # Platform common
+  platform/common/PlatformFactory.cpp
+
   # Desktop platform mocks
   platform/desktop/MockAudioInput.cpp
   platform/desktop/MockAudioOutput.cpp

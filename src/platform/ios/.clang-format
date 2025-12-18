@@ -1,4 +1,4 @@
-BasedOnStyle: Apple
+BasedOnStyle: LLVM
 Language: ObjC
 ColumnLimit: 80
 PointerAlignment: Left
@@ -16,7 +16,6 @@ IncludeCategories:
     Priority:        4
 
 ObjCBlockIndentWidth: 2
-ObjCPropertyIndentation: 2
 ObjCSpaceAfterProperty: true
 ObjCBinPackProtocolList: Auto
 AllowShortFunctionsOnASingleLine: None
