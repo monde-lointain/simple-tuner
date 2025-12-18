@@ -47,12 +47,20 @@ class TuningMeterComponent : public juce::Component, private juce::Timer {
   float meter_radius_;
   std::vector<float> tick_angles_;
 
+  // Drawing constants
+  static constexpr float kSmallDotRadius = 1.0f;
+  static constexpr float kLargeDotRadius = 2.0f;
+  static constexpr float kLineStartRatio = 0.333f;
+  static constexpr float kLineEndRatio = 0.98f;
+  static constexpr float kTriangleStartRatio = 1.01f;
+  static constexpr float kSqrt3Over2 = 0.866025404f;
+  static constexpr float kCenterLabelDistance = 25.0f;
+
   // Timer for needle animation
   void timerCallback() override;
 
   // Helper methods
   float cents_to_angle(float cents) const noexcept;
-  void draw_arc(juce::Graphics& g);
   void draw_radial_lines(juce::Graphics& g);
   void draw_cent_dots(juce::Graphics& g);
   void draw_center_triangle(juce::Graphics& g);
